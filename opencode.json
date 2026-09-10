@@ -1,0 +1,26 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "mssql-test-server": {
+      "type": "local",
+      "command": ["npx", "-y", "@liangshanli/mcp-server-mssqlserver"],
+      "environment": {
+        "MSSQL_SERVER": "203.202.241.211",
+        "MSSQL_PORT": "1433",
+        "MSSQL_USER": "mcp_user",
+        "MSSQL_PASSWORD": "iAOS@35o997",
+        "MSSQL_DATABASE": "DWH",
+        "MSSQL_ENCRYPT": "false",
+        "MSSQL_TRUST_SERVER_CERTIFICATE": "false",
+        "ALLOW_DDL": "false",
+        "ALLOW_DROP": "false",
+        "ALLOW_DELETE": "false"
+      }
+    },
+    "akij-pms": {
+      "type": "remote",
+      "url": "https://pms-mcp.vercel.app/api/mcp",
+      "enabled": true
+    }
+  }
+}
