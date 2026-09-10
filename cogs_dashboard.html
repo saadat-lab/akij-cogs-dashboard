@@ -32,9 +32,9 @@ body {
 }
 h1 {
   font-size: 30px;
-  font-weight: 700;
+  font-weight: 800;
   margin-bottom: 2px;
-  background: linear-gradient(90deg, #a37d1f, #d4af37 45%, #c9a227 70%, #a37d1f);
+  background: linear-gradient(90deg, #0a1931, #12295a 30%, #1e3a8a 55%, #1e40af 75%, #0f2a5a);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -126,8 +126,8 @@ canvas { max-height: 340px; }
 <body>
 
 <h1>Supply &amp; Materials Intelligence — Akij Resource Ltd.</h1>
-<p style="color:var(--text);font-size:12px;font-weight:600;letter-spacing:0.2px;margin:4px 0 2px 0;">Developed &amp; Designed by <span style="color:var(--accent)">Saadat Hussain</span> <span style="color:var(--muted);font-weight:500">| Intern — Supply Chain Planning &amp; Operations</span></p>
-<p class="subtitle">Raw Material &amp; Packaging Material | 10 SBUs | July 2024 – August 14, 2026</p>
+<p style="color:var(--text);font-size:14px;font-weight:600;letter-spacing:0.2px;margin:4px 0 2px 0;">Developed &amp; Designed by <span style="color:var(--accent)">Saadat Hussain</span> <span style="color:var(--muted);font-weight:500">| Intern — Supply Chain Planning &amp; Operations</span></p>
+<p class="subtitle" id="subtitleRange">Raw Material &amp; Packaging Material | 10 SBUs | July 2024 – September 10, 2026</p>
 
 <!-- AI Insights -->
 <div class="insight-box" id="insights"><h3>AI INSIGHTS</h3><div id="insights-content"></div></div>
@@ -1035,6 +1035,9 @@ function init() {
   initItems();
   initYoY();
   initSlob();
+  // keep subtitle date evergreen (July 2024 – today) so auto-refreshes always show current date
+  var subEl = document.getElementById('subtitleRange');
+  if (subEl) { var dd=new Date(); var mms=["January","February","March","April","May","June","July","August","September","October","November","December"]; subEl.textContent = "Raw Material & Packaging Material | 10 SBUs | July 2024 – " + mms[dd.getMonth()] + " " + dd.getDate() + ", " + dd.getFullYear(); }
 }
 
 init();
