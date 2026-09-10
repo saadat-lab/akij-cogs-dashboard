@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>COGS Dashboard - Raw & Packaging Material | Akij Group</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #f8f9fb;
+  --card: #ffffff;
+  --border: #e2e6ed;
+  --text: #1a1d2e;
+  --muted: #6b7280;
+  --accent: #4f6ef7;
+  --accent-light: #eef1ff;
+  --red: #e74c3c;
+  --orange: #f59e0b;
+  --green: #10b981;
+  --blue: #3b82f6;
+  --teal: #14b8a6;
+  --pink: #ec4899;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  padding: 24px;
+  min-height: 100vh;
+}
+h1 {
+  font-size: 30px;
+  font-weight: 700;
+  margin-bottom: 2px;
+  background: linear-gradient(90deg, #a37d1f, #d4af37 45%, #c9a227 70%, #a37d1f);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  letter-spacing: 0.4px;
+}
+.subtitle { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+.grid { display: grid; gap: 16px; }
+.cols-2 { grid-template-columns: 1fr 1fr; }
+.cols-4 { grid-template-columns: repeat(4, 1fr); }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: var(--shadow);
+}
+.card h3 { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 14px; font-weight: 600; }
+.kpi { text-align: center; }
+.kpi .val { font-size: 26px; font-weight: 700; color: var(--text); }
+.kpi .lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+.filter-bar {
+  display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 16px;
+}
+.filter-bar select, .filter-bar input, .filter-bar button {
+  background: var(--card); color: var(--text); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 14px; font-size: 13px; cursor: pointer;
+  box-shadow: var(--shadow);
+}
+.filter-bar button { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+.filter-bar button:hover { opacity: 0.85; }
+
+.tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+.tbl th { text-align: left; color: var(--muted); padding: 8px 10px; border-bottom: 2px solid var(--border); font-weight: 600; text-transform: uppercase; font-size: 10px; position: sticky; top: 0; background: var(--card); z-index: 1; }
+.tbl td { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+.tbl tr:hover td { background: var(--accent-light); }
+.tbl .num { text-align: right; font-variant-numeric: tabular-nums; }
+
+.insight-box {
+  background: linear-gradient(135deg, #f0f4ff, #f8f9fb);
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.insight-box h3 { color: var(--accent); margin-bottom: 8px; font-size: 13px; }
+.insight-box .insight-item { padding: 5px 0; font-size: 12px; border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; gap: 6px; align-items: flex-start; }
+
+.tab-row { display: flex; gap: 4px; margin-bottom: 12px; }
+.tab { padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 12px; color: var(--muted); border: 1px solid var(--border); background: var(--card); }
+.tab.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+canvas { max-height: 340px; }
+
+.monthly-row { background: var(--accent-light); border-left: 3px solid var(--accent); }
+.monthly-scroll { overflow-x: auto; max-width: 100%; padding: 10px 0; }
+.monthly-scroll table { min-width: 600px; width: max-content; }
+.monthly-scroll th { background: #eef1ff; position: sticky; top: 0; z-index: 2; white-space: nowrap; text-align: center; font-size: 10px; padding: 4px 8px; }
+.monthly-scroll td { text-align: center; font-size: 10px; padding: 4px 8px; white-space: nowrap; color: var(--text); }
+.btn-sm {
+  background: var(--accent); color: #fff; border: none; border-radius: 6px;
+  padding: 3px 10px; font-size: 10px; cursor: pointer; font-weight: 600;
+}
+.btn-sm:hover { opacity: 0.8; }
+.tag {
+  display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600;
+  background: #f1f5f9; color: #475569;
+}
+.tag-rm { background: #dbeafe; color: #1d4ed8; }
+.tag-pm { background: #fce7f3; color: #be185d; }
+.tag-other { background: #f1f5f9; color: #475569; }
+
+.mat-toggle-group { display: flex; gap: 4px; flex-wrap: wrap; }
+.mat-toggle {
+  padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border);
+  background: var(--card); color: var(--muted); font-size: 11px; cursor: pointer;
+  white-space: nowrap; transition: all 0.15s;
+}
+.mat-toggle.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.mat-toggle:hover:not(.active) { border-color: var(--accent); color: var(--text); }
+
+@media (max-width: 1100px) {
+  .cols-2, .cols-4 { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<h1>Saadat's COGS Report & Insights</h1>
+<p class="subtitle">Raw Material & Packaging Material | 10 SBUs | July 2024 – August 14, 2026</p>
+
+<!-- AI Insights -->
+<div class="insight-box" id="insights"><h3>AI INSIGHTS</h3><div id="insights-content"></div></div>
+
+<!-- Filters -->
+<div class="filter-bar">
+  <select id="sbuFilter" onchange="applyFilters()"><option value="all">All SBUs</option></select>
+  <select id="materialFilter" onchange="applyFilters()"><option value="all">All Materials</option><option value="Raw Material">Raw Material</option><option value="Packaging Material">Packaging Material</option></select>
+  <select id="viewMode" onchange="applyFilters()"><option value="consumption">Consumption Only</option><option value="purchase">Purchase Only</option><option value="cogs">COGS View</option></select>
+  <button onclick="resetFilters()">Reset</button>
+  <span style="margin-left:auto;color:var(--muted);font-size:11px;" id="lastUpdate"></span>
+</div>
+
+<!-- KPIs -->
+<div class="grid cols-4" id="kpiRow">
+  <div class="card kpi"><div class="val" id="kpiCogs">--</div><div class="lbl">Total COGS</div></div>
+  <div class="card kpi"><div class="val" id="kpiRm">--</div><div class="lbl">Raw Material Consumed</div></div>
+  <div class="card kpi"><div class="val" id="kpiPm">--</div><div class="lbl">Packaging Material Consumed</div></div>
+  <div class="card kpi"><div class="val" id="kpiCount">--</div><div class="lbl">Transactions</div></div>
+</div>
+
+<!-- Charts -->
+<div class="grid cols-2" style="margin-top:16px;">
+  <div class="card"><h3>COGS BY SBU</h3><canvas id="chartCogsBySbu"></canvas></div>
+  <div class="card"><h3>RM vs PM CONSUMPTION</h3><canvas id="chartRmPm"></canvas></div>
+</div>
+<div class="grid cols-2" style="margin-top:16px;">
+  <div class="card"><h3>DAILY COGS TREND</h3>
+    <div class="filter-bar" style="margin-bottom:10px;">
+      <select id="dailyTxnFilter" onchange="chartDaily()" title="Consumption type"><option value="all">All Consumption Types</option></select>
+      <select id="dailyMatFilter" onchange="chartDaily()" title="Material type"><option value="all">All Materials</option></select>
+      <span style="color:var(--muted);font-size:11px;" id="dailyHint"></span>
+    </div>
+    <canvas id="chartDaily"></canvas>
+  </div>
+  <div class="card"><h3>COGS MIX BY SBU</h3><canvas id="chartMix"></canvas></div>
+</div>
+
+<!-- SBU Detail Table -->
+<div class="card" style="margin-top:16px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+    <h3 style="margin:0;">DETAILED BREAKDOWN</h3>
+    <div class="tab-row">
+      <div class="tab active" onclick="switchTab('cogs')">COGS</div>
+      <div class="tab" onclick="switchTab('rm')">Raw Material</div>
+      <div class="tab" onclick="switchTab('pm')">Packaging</div>
+      <div class="tab" onclick="switchTab('ratio')">RM/COGS Ratio</div>
+    </div>
+  </div>
+  <div style="overflow-x:auto;" id="detailTable"></div>
+</div>
+
+<!-- Items Table -->
+<div class="card" style="margin-top:16px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+    <h3 style="margin:0;">ITEM-LEVEL CONSUMPTION</h3>
+    <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+      <select id="itemSbuFilter" onchange="renderItems()" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;box-shadow:var(--shadow);"><option value="all">All SBUs</option></select>
+      <div class="mat-toggle-group" id="itemMatToggle" style="display:flex;gap:3px;align-items:center;flex-wrap:wrap;"></div>
+      <select id="itemTxnFilter" onchange="renderItems()" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;box-shadow:var(--shadow);"><option value="all">All Consumption Types</option></select>
+      <input type="text" id="itemSearch" placeholder="Search items..." oninput="renderItems()" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;width:200px;box-shadow:var(--shadow);">
+      <select id="itemSort" onchange="renderItems()" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;box-shadow:var(--shadow);">
+        <option value="value_desc">Value (High-Low)</option>
+        <option value="value_asc">Value (Low-High)</option>
+        <option value="qty">Quantity</option>
+        <option value="alpha">Alphabetical</option>
+      </select>
+      <button onclick="exportCSV()" style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11px;cursor:pointer;font-weight:600;">Export CSV</button>
+    </div>
+  </div>
+  <div><span id="itemRange" style="color:var(--muted);font-size:11px;"></span></div>
+  <div style="overflow-x:auto; max-height:600px; overflow-y:auto;" id="itemsTable"></div>
+  <div style="display:flex; justify-content:center; gap:4px; margin-top:10px;" id="itemPagination"></div>
+</div>
+
+<!-- YoY Rate Comparison -->
+<div class="card" style="margin-top:16px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+    <h3 style="margin:0;">YEAR-OVER-YEAR RATE COMPARISON (July & August)</h3>
+    <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+      <select id="yoySbuFilter" onchange="renderYoY()" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;box-shadow:var(--shadow);"><option value="all">All SBUs</option></select>
+      <select id="yoyMonthFilter" onchange="renderYoY()" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;box-shadow:var(--shadow);"><option value="7">July</option><option value="8">August</option></select>
+      <div class="mat-toggle-group" id="yoyMatToggle" style="display:flex;gap:3px;align-items:center;flex-wrap:wrap;"></div>
+      <select id="yoyTxnFilter" onchange="renderYoY()" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;box-shadow:var(--shadow);"><option value="all">All Consumption Types</option></select>
+      <select id="yoySortFilter" onchange="renderYoY()" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;box-shadow:var(--shadow);">
+        <option value="desc">Impact Desc (Highest +ve)</option>
+        <option value="asc">Impact Asc (Highest -ve / Savings)</option>
+      </select>
+      <input type="text" id="yoySearch" placeholder="Search item..." oninput="renderYoY()" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;width:180px;box-shadow:var(--shadow);">
+      <button onclick="exportYoYCSV()" style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11px;cursor:pointer;font-weight:600;">Export CSV</button>
+    </div>
+  </div>
+  <div class="grid cols-4" style="margin-bottom:12px;" id="yoyKpiRow">
+    <div class="card kpi" style="padding:10px;"><div class="val" id="yoyNetImpact" style="font-size:22px;">--</div><div class="lbl">Net Impact</div></div>
+    <div class="card kpi" style="padding:10px;"><div class="val" id="yoyItemCount" style="font-size:22px;">--</div><div class="lbl">Items Compared</div></div>
+    <div class="card kpi" style="padding:10px;"><div class="val" id="yoyPosCount" style="font-size:22px;">--</div><div class="lbl">+ve Impact Items</div></div>
+    <div class="card kpi" style="padding:10px;"><div class="val" id="yoyNegCount" style="font-size:22px;">--</div><div class="lbl">-ve Impact (Savings)</div></div>
+  </div>
+  <div><span id="yoyRange" style="color:var(--muted);font-size:11px;"></span></div>
+  <div style="overflow-x:auto; max-height:550px; overflow-y:auto;" id="yoyTable"></div>
+</div>
+
+<!-- SLOB Section -->
+<div class="card" style="margin-top:16px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+    <h3 style="margin:0;">SLOB ANALYSIS (Slow / Obsolete Inventory)</h3>
+    <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+      <select id="slobSbuFilter" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;box-shadow:var(--shadow);"><option value="AAFL">AAFL (Akij Agro Feed)</option><option value="HRML">HRML (Hashem Rice Mills)</option><option value="FAL">FAL (Fariq Agro Ltd.)</option></select>
+      <select id="slobPeriodFilter" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;box-shadow:var(--shadow);"></select>
+      <select id="slobTypeFilter" onchange="renderSlob()" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;box-shadow:var(--shadow);"><option value="all">All Materials</option><option value="RM">Raw Material</option><option value="PM">Packaging Material</option><option value="Other">Other</option></select>
+      <select id="slobZeroFilter" onchange="renderSlob()" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;box-shadow:var(--shadow);"><option value="slob">SLOB Only (Zero Use)</option><option value="all">All Items</option></select>
+      <select id="slobSortFilter" onchange="renderSlob()" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;box-shadow:var(--shadow);"><option value="value_desc">Highest SLOB Value ↓</option><option value="value_asc">Lowest SLOB Value ↑</option><option value="alpha">Item Name A→Z</option></select>
+      <input type="text" id="slobSearch" placeholder="Search item / code..." oninput="renderSlob()" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;width:180px;box-shadow:var(--shadow);">
+      <button onclick="exportSlobCSV()" style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11px;cursor:pointer;font-weight:600;">Export CSV</button>
+    </div>
+  </div>
+
+  <p style="color:var(--muted);font-size:12px;margin-bottom:12px;">A material is <b>SLOB</b> when it had <b>zero consumption (negative quantity) in the trailing 6 months</b>; <b>SLOB value = sum of closing values</b> of those items. All three SBUs now source value from <b>DataMart.inv.tblInventoryStatement</b> (ClosingStock × AvgRate, latest per item/warehouse). RM/PM split is keyword-based and may need finance mapping refinement. Use the SBU selector to switch between AAFL, HRML and FAL.</p>
+
+  <div class="grid cols-2" style="margin-bottom:12px;">
+    <div class="card" style="padding:14px;"><h3 style="font-size:12px;margin-bottom:10px;">RM SLOB vs Total</h3><canvas id="slobPieRM" height="170"></canvas><div id="slobPieRMCap" style="font-size:10px;color:var(--muted);margin-top:6px;line-height:1.4;"></div></div>
+    <div class="card" style="padding:14px;"><h3 style="font-size:12px;margin-bottom:10px;">PM SLOB vs Total</h3><canvas id="slobPiePM" height="170"></canvas><div id="slobPiePMCap" style="font-size:10px;color:var(--muted);margin-top:6px;line-height:1.4;"></div></div>
+  </div>
+
+  <div class="grid cols-4" style="margin-bottom:12px;" id="slobKpiRow">
+    <div class="card kpi" style="padding:10px;"><div class="val" id="slobRmValue" style="font-size:20px;">--</div><div class="lbl" id="slobRmLbl">RM SLOB Value</div></div>
+    <div class="card kpi" style="padding:10px;"><div class="val" id="slobPmValue" style="font-size:20px;">--</div><div class="lbl" id="slobPmLbl">PM SLOB Value</div></div>
+    <div class="card kpi" style="padding:10px;"><div class="val" id="slobRmPct" style="font-size:20px;">--</div><div class="lbl" id="slobRmPctLbl">RM SLOB % of Stock</div></div>
+    <div class="card kpi" style="padding:10px;"><div class="val" id="slobPmPct" style="font-size:20px;">--</div><div class="lbl" id="slobPmPctLbl">PM SLOB % of Stock</div></div>
+  </div>
+
+  <div><span id="slobRange" style="color:var(--muted);font-size:11px;"></span></div>
+  <div style="overflow-x:auto; max-height:600px; overflow-y:auto;" id="slobTable"></div>
+</div>
+
+<script src="yoy_data.js"></script>
+<script src="items_data.js"></script>
+<script src="monthly_items.js"></script>
+<script src="daily_items.js"></script>
+<script src="slob_data.js"></script>
+<script src="slob_aafl.js"></script>
+<script src="slob_hrml.js"></script>
+<script src="slob_fal.js"></script>
+<script>
+// ===== DATA =====
+const rawData = {
+  summary: [
+    {code:"ACCL",name:"Akij Cement",cogs:1213129725.80,rmCons:1296673598.18,rmPurch:1286592954.08,pmCons:0,pmPurch:0},
+    {code:"AIL",name:"Akij Ispat",cogs:811880627.54,rmCons:1090501513.35,rmPurch:1651440681.66,pmCons:0,pmPurch:0},
+    {code:"AEL",name:"Akij Essential",cogs:2067189268.04,rmCons:927888568.47,rmPurch:810945055.97,pmCons:29298539.73,pmPurch:24496341.77},
+    {code:"APFIL",name:"Akij Poly Fibre",cogs:174662970.20,rmCons:165255154.48,rmPurch:212386976.11,pmCons:70794.06,pmPurch:109500.00},
+    {code:"ARMCL",name:"ARMCL",cogs:302476326.97,rmCons:324486333.58,rmPurch:284255161.71,pmCons:0,pmPurch:0},
+    {code:"ABSL",name:"ABSL",cogs:57486740.34,rmCons:39538492.48,rmPurch:21337843.25,pmCons:0,pmPurch:0},
+    {code:"HRML",name:"Hashem Rice",cogs:576783058.65,rmCons:535078409.42,rmPurch:608675954.72,pmCons:15928035.67,pmPurch:14676177.87},
+    {code:"FAL",name:"Fariq Agro",cogs:97283137.81,rmCons:68537663.03,rmPurch:96403425.14,pmCons:1490344.64,pmPurch:2654784.60},
+    {code:"AAFL",name:"Akij Agro",cogs:982061810.86,rmCons:1023043333.24,rmPurch:953627265.44,pmCons:20115209.42,pmPurch:15152008.06},
+    {code:"ALEL",name:"Akij Light Eng.",cogs:131881799.89,rmCons:119629651.12,rmPurch:167253808.72,pmCons:136300.00,pmPurch:54450.00}
+  ],
+  monthly: {"2026-07":{ACCL:[971761557.30,-181891138.83,0],AIL:[628412852.97,586611111.05,0],AEL:[1455285378.23,-312693983.20,-694030.46],APFIL:[163792348.70,57369526.21,38705.95],ARMCL:[216154295.03,-29523324.73,0],ABSL:[39316551.51,-4377510.15,0],HRML:[437391205.34,143974896.56,-2131670.75],FAL:[79099642.82,31527771.65,-50583.38],AAFL:[743496601.63,-128337995.00,-5100615.51],ALEL:[106893955.90,26864089.03,-65600.00]},"2026-08":{ACCL:[241368168.51,171810494.73,0],AIL:[183467774.57,-25671942.75,0],AEL:[611903889.81,195750470.70,-4108167.50],APFIL:[10870621.50,-10237704.59,0],ARMCL:[86322031.95,-10707847.14,0],ABSL:[18170188.83,-13823139.08,0],HRML:[139391853.31,-70377351.26,879812.95],FAL:[18183494.99,-3662009.53,1215023.34],AAFL:[238565209.23,58921927.21,137414.15],ALEL:[24987843.99,20760068.57,-16250.00]}},
+  daily: [["2026-07-01",138.1,152.9,2.1],["2026-07-02",132.7,133.6,2.0],["2026-07-03",82.4,94.0,1.2],["2026-07-04",103.7,114.2,0.8],["2026-07-05",134.5,149.3,2.2],["2026-07-06",158.8,149.6,1.7],["2026-07-07",180.5,98.6,1.0],["2026-07-08",125.4,103.2,1.4],["2026-07-09",134.6,105.7,0.9],["2026-07-10",71.2,65.3,1.2],["2026-07-11",111.5,63.7,1.0],["2026-07-12",81.3,160.9,1.6],["2026-07-13",125.8,105.0,1.0],["2026-07-14",135.2,113.0,1.5],["2026-07-15",151.2,159.1,1.4],["2026-07-16",166.1,136.2,1.5],["2026-07-17",103.8,143.6,1.0],["2026-07-18",161.3,138.5,1.9],["2026-07-19",160.5,80.4,2.0],["2026-07-20",138.1,180.2,1.4],["2026-07-21",161.2,179.2,1.4],["2026-07-22",198.8,155.4,2.6],["2026-07-23",168.4,123.4,1.8],["2026-07-24",109.9,80.1,1.4],["2026-07-25",172.7,181.8,1.7],["2026-07-26",180.4,102.5,1.4],["2026-07-27",255.7,271.1,3.2],["2026-07-28",233.8,98.4,2.6],["2026-07-29",222.9,120.7,2.0],["2026-07-30",241.1,163.2,2.3],["2026-07-31",299.9,170.9,1.4],["2026-08-01",121.9,91.7,1.1],["2026-08-02",139.3,108.6,1.5],["2026-08-03",143.7,114.5,1.0],["2026-08-04",174.1,146.6,1.5],["2026-08-05",111.2,99.7,1.2],["2026-08-06",185.6,166.2,1.6],["2026-08-07",100.0,106.5,1.1],["2026-08-08",140.9,172.0,1.8],["2026-08-09",166.4,245.4,1.7],["2026-08-10",211.4,145.5,2.6],["2026-08-11",78.7,100.2,1.0]]
+};
+
+const colors = ['#4f6ef7','#e74c3c','#10b981','#f59e0b','#3b82f6','#14b8a6','#ec4899','#8b5cf6','#f43f5e','#06b6d4'];
+const sbuColors = {};
+rawData.summary.forEach((s,i) => sbuColors[s.code] = colors[i]);
+
+function fmt(x) {
+  if (Math.abs(x) >= 1e7) return (x/1e7).toFixed(2)+' Cr';
+  if (Math.abs(x) >= 1e5) return (x/1e5).toFixed(2)+' L';
+  if (Math.abs(x) >= 1e3) return (x/1e3).toFixed(1)+'K';
+  return x.toFixed(0);
+}
+function fmtPct(a,b) { return b ? (a/b*100).toFixed(1)+'%' : '-'; }
+
+// ===== INSIGHTS =====
+function generateInsights() {
+  const d = rawData.summary;
+  const totalCogs = d.reduce((s,x) => s+x.cogs, 0);
+  const sorted = [...d].sort((a,b) => b.cogs - a.cogs);
+  const top3 = sorted.slice(0,3);
+  const rmRatio = d.map(x => ({n:x.name, r: x.rmCons/x.cogs*100}));
+  rmRatio.sort((a,b) => b.r - a.r);
+  
+  let h = '';
+  h += '<div class="insight-item"><span></span><div><strong>Top COGS Driver:</strong> <span style="color:var(--accent)">'+top3[0].name+'</span> at '+fmt(top3[0].cogs)+' BDT — '+fmtPct(top3[0].cogs, totalCogs)+' of total.</div></div>';
+  h += '<div class="insight-item"><span></span><div><strong>Highest RM/COGS:</strong> <span style="color:var(--orange)">'+rmRatio[0].n+'</span> — RM is '+rmRatio[0].r.toFixed(0)+'% of COGS. Indicates commodity-heavy production.</div></div>';
+  
+  const janCogs = d.reduce((s,x)=>s+(rawData.monthly['2026-07'][x.code]||[0])[0], 0);
+  const febCogs = d.reduce((s,x)=>s+(rawData.monthly['2026-08'][x.code]||[0])[0], 0);
+  const febRR = febCogs / 11 * 31;
+  const diff = janCogs > 0 ? ((febRR - janCogs) / janCogs * 100) : 0;
+  h += '<div class="insight-item"><span></span><div><strong>Month-over-Month:</strong> Jul: '+fmt(janCogs)+' | Aug run-rate: '+fmt(febRR)+' projected ('+(diff>0?'+':'')+diff.toFixed(1)+'% vs Jul).</div></div>';
+  
+  h += '<div class="insight-item"><span></span><div><strong style="color:var(--red)">Spike Alert:</strong> Jul 27 — 255.7M COGS, highest single day (2.4x avg). Likely month-end batch posting.</div></div>';
+  
+  const stockB = d.filter(x => x.rmPurch > x.rmCons * 1.5);
+  if (stockB.length) h += '<div class="insight-item"><span></span><div><strong style="color:var(--orange)">Inventory Buildup:</strong> '+stockB.map(x=>x.name).join(', ')+' — RM purchased >> consumed. Monitor working capital.</div></div>';
+  
+  h += '<div class="insight-item"><span></span><div><strong style="color:var(--muted)">Data:</strong> Accounting Journal + Inventory Transactions. 42 trading days, 10 SBUs. Last refreshed: '+new Date().toLocaleDateString()+'</div></div>';
+  document.getElementById('insights-content').innerHTML = h;
+}
+
+// ===== KPIs =====
+function updateKPIs() {
+  const d = rawData.summary;
+  document.getElementById('kpiCogs').textContent = fmt(d.reduce((s,x)=>s+x.cogs,0))+' BDT';
+  document.getElementById('kpiRm').textContent = fmt(d.reduce((s,x)=>s+x.rmCons,0))+' BDT';
+  document.getElementById('kpiPm').textContent = fmt(d.reduce((s,x)=>s+x.pmCons,0))+' BDT';
+  document.getElementById('kpiCount').textContent = '49,617';
+  document.getElementById('lastUpdate').textContent = 'Refreshed: '+new Date().toLocaleString();
+}
+
+// ===== CHARTS =====
+let ci = {};
+function dc(k) { if(ci[k]){ci[k].destroy();delete ci[k];} }
+
+function chartCogsBySbu() {
+  dc('a');
+  const sorted = [...rawData.summary].sort((a,b)=>b.cogs-a.cogs);
+  const ctx = document.getElementById('chartCogsBySbu').getContext('2d');
+  ci.a = new Chart(ctx, {
+    type: 'bar', data: { labels: sorted.map(x=>x.name), datasets: [{ label: 'COGS (BDT)', data: sorted.map(x=>x.cogs), backgroundColor: sorted.map(x=>sbuColors[x.code]+'cc'), borderColor: sorted.map(x=>sbuColors[x.code]), borderWidth:1, borderRadius:4 }] },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.raw)+' BDT'}}}, scales:{x:{ticks:{color:'#6b7280',font:{size:10},maxRotation:45}},y:{ticks:{color:'#6b7280',callback:v=>fmt(v)},grid:{color:'#f0f0f0'}}} }
+  });
+}
+
+function chartRmPm() {
+  dc('b');
+  const d = rawData.summary.filter(x=>x.rmCons>0||x.pmCons>0).sort((a,b)=>b.rmCons-a.rmCons);
+  const ctx = document.getElementById('chartRmPm').getContext('2d');
+  ci.b = new Chart(ctx, {
+    type: 'bar', data: { labels: d.map(x=>x.name), datasets: [{label:'RM Consumed',data:d.map(x=>x.rmCons),backgroundColor:'#3b82f6',borderRadius:3},{label:'PM Consumed',data:d.map(x=>x.pmCons),backgroundColor:'#ec4899',borderRadius:3}] },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.raw)+' BDT'}}}, scales:{x:{ticks:{color:'#6b7280',font:{size:10},maxRotation:45}},y:{ticks:{color:'#6b7280',callback:v=>fmt(v)},grid:{color:'#f0f0f0'}}} }
+  });
+}
+
+function initDaily() {
+  var hint = document.getElementById('dailyHint');
+  if (typeof DAILY_DATA === 'undefined' || !DAILY_DATA.length) {
+    hint.textContent = 'Run fetch_daily.js (office network) to enable consumption-type & material filters.';
+    return;
+  }
+  var txnSel = document.getElementById('dailyTxnFilter');
+  [...new Set(DAILY_DATA.map(function(r){ return r[1]; }))].sort().forEach(function(t){ var o = document.createElement('option'); o.value = t; o.textContent = t; txnSel.appendChild(o); });
+  var matSel = document.getElementById('dailyMatFilter');
+  [...new Set(DAILY_DATA.map(function(r){ return r[2]; }))].sort().forEach(function(t){ var o = document.createElement('option'); o.value = t; o.textContent = t; matSel.appendChild(o); });
+}
+
+function chartDaily() {
+  dc('c');
+  const ctx = document.getElementById('chartDaily').getContext('2d');
+  const months=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  if (typeof DAILY_DATA === 'undefined' || !DAILY_DATA.length) {
+    // fallback: accounting-journal daily view
+    const dl = rawData.daily||[];
+    const labels = dl.map(d=>months[+d[0].split('-')[1]]+' '+ +d[0].split('-')[2]);
+    ci.c = new Chart(ctx, {
+      type: 'line', data: { labels, datasets: [{label:'Daily COGS (Cr BDT)',data:dl.map(d=>d[1]/10),borderColor:'#4f6ef7',backgroundColor:'rgba(79,110,247,0.08)',fill:true,tension:0.3,pointRadius:2},{label:'Daily RM Consumed (Cr BDT)',data:dl.map(d=>d[2]/10),borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.05)',fill:true,tension:0.3,pointRadius:1,hidden:true}] },
+      options: { responsive:true, maintainAspectRatio:false, plugins:{tooltip:{callbacks:{label:c=>c.dataset.label.replace(' (Cr BDT)','')+': '+c.raw.toFixed(2)+' Cr'}}}, scales:{x:{ticks:{color:'#6b7280',font:{size:9},maxTicksLimit:21}},y:{ticks:{color:'#6b7280',callback:v=>v.toFixed(1)+' Cr'},grid:{color:'#f0f0f0'}}} }
+    });
+    return;
+  }
+  const txn = document.getElementById('dailyTxnFilter').value;
+  const mat = document.getElementById('dailyMatFilter').value;
+  const rows = DAILY_DATA.filter(function(r){ return (txn==='all' || r[1]===txn) && (mat==='all' || r[2]===mat); });
+  const byDate = {};
+  rows.forEach(function(r){
+    const dt=r[0], mt=r[2], v=Math.abs(r[3]);
+    if(!byDate[dt]) byDate[dt]={};
+    byDate[dt][mt]=(byDate[dt][mt]||0)+v;
+  });
+  const dates = Object.keys(byDate).sort();
+  const labels = dates.map(function(d){ const p=d.split('-'); return months[+p[1]]+' '+ +p[2]; });
+  const datasets = [];
+  const colors = ['#4f6ef7','#ec4899','#f59e0b','#14b8a6','#10b981'];
+  if (mat === 'all') {
+    const mtypes = [...new Set(rows.map(function(r){ return r[2]; }))].sort();
+    mtypes.forEach(function(mt,i){
+      datasets.push({ label: mt+' (Cr BDT)', data: dates.map(function(d){ return +(((byDate[d][mt]||0)/10).toFixed(3)); }), borderColor: colors[i%colors.length], backgroundColor: colors[i%colors.length]+'22', fill:false, tension:0.3, pointRadius:2 });
+    });
+  } else {
+    datasets.push({ label: mat+' (Cr BDT)', data: dates.map(function(d){ return +(((byDate[d][mat]||0)/10).toFixed(3)); }), borderColor: '#4f6ef7', backgroundColor: 'rgba(79,110,247,0.08)', fill:true, tension:0.3, pointRadius:2 });
+  }
+  ci.c = new Chart(ctx, {
+    type: 'line', data: { labels, datasets },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{tooltip:{callbacks:{label:function(c){ return c.dataset.label.replace(' (Cr BDT)','')+': '+c.parsed.y.toFixed(2)+' Cr'; }}}}, scales:{x:{ticks:{color:'#6b7280',font:{size:9},maxTicksLimit:21}},y:{ticks:{color:'#6b7280',callback:function(v){ return v.toFixed(1)+' Cr'; }},grid:{color:'#f0f0f0'}}} }
+  });
+}
+
+function chartMix() {
+  dc('d');
+  const d = rawData.summary;
+  const ctx = document.getElementById('chartMix').getContext('2d');
+  ci.d = new Chart(ctx, {
+    type: 'doughnut', data: { labels: d.map(x=>x.name), datasets: [{data:d.map(x=>x.cogs),backgroundColor:d.map(x=>sbuColors[x.code]),borderColor:'#fff',borderWidth:2}] },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'right',labels:{color:'#6b7280',font:{size:10},padding:8}},tooltip:{callbacks:{label:c=>c.label+': '+fmt(c.raw)+' BDT ('+fmtPct(c.raw,c.dataset.data.reduce((a,b)=>a+b,0))+')'}}} }
+  });
+}
+
+// ===== DETAIL TABLE =====
+function buildDetailTable(tab) {
+  var d = [...rawData.summary];
+  var cols, rows;
+  if (tab==='cogs') { cols=['SBU','COGS Total','% of Total','Daily Avg']; rows = d.sort((a,b)=>b.cogs-a.cogs).map(x=>[x.name,fmt(x.cogs),fmtPct(x.cogs,d.reduce((s,y)=>s+y.cogs,0)),'--']); }
+  else if (tab==='rm') { cols=['SBU','RM Consumed','RM Purchased','Net','RM/COGS %','Status']; rows = d.sort((a,b)=>b.rmCons-a.rmCons).map(x=>{var n=x.rmPurch-x.rmCons;var s=n>x.rmCons*0.3?'BUILDING':n<-x.rmCons*0.1?'DRAWING':'BALANCED';return[x.name,fmt(x.rmCons),fmt(x.rmPurch),(n>=0?'+':'')+fmt(n),fmtPct(x.rmCons,x.cogs),s];}); }
+  else if (tab==='pm') { cols=['SBU','PM Consumed','PM Purchased','Net','PM/COGS %']; var fd=d.filter(x=>x.pmCons>0||x.pmPurch>0).sort((a,b)=>b.pmCons-a.pmCons); rows=fd.map(x=>{var n=x.pmPurch-x.pmCons;return[x.name,fmt(x.pmCons),fmt(x.pmPurch),(n>=0?'+':'')+fmt(n),fmtPct(x.pmCons,x.cogs)];}); }
+  else if (tab==='ratio') { cols=['SBU','COGS','RM Cons','RM/COGS %','PM Cons','PM/COGS %','RM+PM/COGS %']; rows=d.sort((a,b)=>(b.rmCons+b.pmCons)/b.cogs-(a.rmCons+a.pmCons)/a.cogs).map(x=>[x.name,fmt(x.cogs),fmt(x.rmCons),fmtPct(x.rmCons,x.cogs),fmt(x.pmCons),fmtPct(x.pmCons,x.cogs),fmtPct(x.rmCons+x.pmCons,x.cogs)]); }
+  var h='<table class="tbl"><thead><tr>'+cols.map(c=>'<th>'+c+'</th>').join('')+'</tr></thead><tbody>';
+  rows.forEach(r=>{h+='<tr>';r.forEach((c,i)=>{h+='<td class="'+(i===0?'':'num')+'">'+c+'</td>';});h+='</tr>';});
+  h+='</tbody></table>';
+  document.getElementById('detailTable').innerHTML = h;
+}
+
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  event.target.classList.add('active');
+  buildDetailTable(t);
+}
+
+// ===== FILTERS =====
+function applyFilters() { updateKPIs(); chartCogsBySbu(); chartRmPm(); }
+function resetFilters() {
+  document.getElementById('sbuFilter').value='all';document.getElementById('materialFilter').value='all';document.getElementById('viewMode').value='consumption';
+  applyFilters();
+}
+
+// ===== ITEMS TABLE =====
+var itemPage=0, pageSize=100, filteredItems=[], expandedKey=null;
+
+function initItems() {
+  if (typeof ITEMS_DATA === 'undefined') { document.getElementById('itemsTable').innerHTML = '<p style="color:var(--muted);text-align:center;padding:20px;">items_data.js not loaded. Run fetch_items.js to generate.</p>'; return; }
+  var sbuSel = document.getElementById('itemSbuFilter');
+  [...new Set(ITEMS_DATA.map(i => i.sbu))].sort().forEach(c => { var o = document.createElement('option'); o.value = c; o.textContent = c; sbuSel.appendChild(o); });
+  
+  // Material type toggle buttons
+  var types = [...new Set(ITEMS_DATA.map(i => i.type))].sort();
+  var tg = document.getElementById('itemMatToggle');
+  var allBtn = document.createElement('span');
+  allBtn.className = 'mat-toggle active'; allBtn.textContent = 'All'; allBtn.dataset.val = 'all';
+  allBtn.onclick = function(){ toggleMatItem('all', this); };
+  tg.appendChild(allBtn);
+  types.forEach(function(t){
+    var btn = document.createElement('span');
+    btn.className = 'mat-toggle'; btn.textContent = t; btn.dataset.val = t;
+    btn.onclick = function(){ toggleMatItem(t, this); };
+    tg.appendChild(btn);
+  });
+  
+  var txnSel = document.getElementById('itemTxnFilter');
+  [...new Set(ITEMS_DATA.map(i => i.txnType))].sort().forEach(t => { var o = document.createElement('option'); o.value = t; o.textContent = t; txnSel.appendChild(o); });
+  renderItems();
+}
+
+var selectedMatTypes = ['all'];
+function toggleMatItem(val, el) {
+  if (val === 'all') {
+    selectedMatTypes = ['all'];
+    document.querySelectorAll('#itemMatToggle .mat-toggle').forEach(function(b){ b.classList.remove('active'); });
+    el.classList.add('active');
+  } else {
+    el.classList.toggle('active');
+    selectedMatTypes = selectedMatTypes.filter(function(v){ return v !== 'all'; });
+    if (el.classList.contains('active')) {
+      if (selectedMatTypes.indexOf(val) === -1) selectedMatTypes.push(val);
+    } else {
+      selectedMatTypes = selectedMatTypes.filter(function(v){ return v !== val; });
+    }
+    if (selectedMatTypes.length === 0) {
+      selectedMatTypes = ['all'];
+      document.querySelectorAll('#itemMatToggle .mat-toggle')[0].classList.add('active');
+    } else {
+      document.querySelectorAll('#itemMatToggle .mat-toggle')[0].classList.remove('active');
+    }
+  }
+  renderItems();
+}
+
+function renderItems() {
+  var sbu = document.getElementById('itemSbuFilter').value;
+  var txn = document.getElementById('itemTxnFilter').value;
+  var search = document.getElementById('itemSearch').value.toLowerCase();
+  var sort = document.getElementById('itemSort').value;
+
+  filteredItems = ITEMS_DATA.filter(function(i){
+    if (sbu !== 'all' && i.sbu !== sbu) return false;
+    if (selectedMatTypes.indexOf('all') === -1 && selectedMatTypes.indexOf(i.type) === -1) return false;
+    if (txn !== 'all' && i.txnType !== txn) return false;
+    if (search && !i.item.toLowerCase().includes(search)) return false;
+    return true;
+  });
+  
+  if(sort==='value_desc')filteredItems.sort((a,b)=>Math.abs(b.value)-Math.abs(a.value));
+  else if(sort==='value_asc')filteredItems.sort((a,b)=>Math.abs(a.value)-Math.abs(b.value));
+  else if(sort==='qty')filteredItems.sort((a,b)=>Math.abs(b.qty)-Math.abs(a.qty));
+  else filteredItems.sort((a,b)=>a.item.localeCompare(b.item));
+  
+  var total=filteredItems.length, pages=Math.ceil(total/pageSize);
+  if(itemPage>=pages)itemPage=pages-1;
+  if(itemPage<0)itemPage=0;
+  var start=itemPage*pageSize;
+  var page=filteredItems.slice(start,start+pageSize);
+  
+  document.getElementById('itemRange').textContent='Showing '+(start+1)+'-'+Math.min(start+pageSize,total)+' of '+total.toLocaleString()+' item rows';
+  
+  var h='<table class="tbl"><thead><tr><th>#</th><th>SBU</th><th>Type</th><th>Txn Type</th><th>Item Name</th><th class="num">Value</th><th class="num">Qty</th><th class="num">Rate/Mo</th><th class="num">Txns</th><th></th></tr></thead><tbody>';
+  page.forEach((item,i)=>{
+    var key = item.sbu+'|'+item.item+'|'+item.txnType;
+    var hasMonthly = typeof MONTHLY_DATA !== 'undefined' && MONTHLY_DATA[key];
+    
+    // Monthly consumption rate from Jul 2025 onwards
+    var monthlyRate = 0;
+    if (hasMonthly) {
+      var mData = MONTHLY_DATA[key];
+      var totalVal = mData.reduce(function(s,d){ return s + Math.abs(d.value); }, 0);
+      var uniqueMonths = new Set(mData.map(function(d){ return d.yr+'-'+d.mon; })).size;
+      monthlyRate = uniqueMonths > 0 ? totalVal / uniqueMonths : 0;
+    }
+    
+    h+='<tr id="ir'+(start+i)+'"><td>'+(start+i+1)+'</td><td style="color:'+(sbuColors[item.sbu]||'var(--accent)')+'">'+item.sbu+'</td><td>'+typeTag(item.type)+'</td><td style="font-size:10px;color:var(--muted);">'+item.txnType+'</td><td title="'+item.item+'">'+item.item.substring(0,50)+(item.item.length>50?'...':'')+'</td><td class="num">'+fmt(item.value)+'</td><td class="num">'+(item.qty<0?Math.abs(item.qty).toFixed(2):item.qty)+'</td><td class="num">'+fmt(monthlyRate)+'/mo</td><td class="num">'+item.txn+'</td><td>'+(hasMonthly?'<button class="btn-sm" onclick="toggleMonthly('+(start+i)+',\''+key.replace(/'/g,"\\'")+'\')">Monthly</button>':'')+'</td></tr>';
+  });
+  h+='</tbody></table>';
+  document.getElementById('itemsTable').innerHTML = h;
+  if(expandedKey) {
+    setTimeout(function(){
+      var exRows = document.querySelectorAll('.monthly-row');
+      if(exRows.length>0) { expandedKey = null; }
+    }, 100);
+  }
+  
+  var pag='';
+  if(pages>1){
+    var mb=10,sp2=Math.max(0,itemPage-Math.floor(mb/2)),ep2=Math.min(pages,sp2+mb);
+    if(ep2-sp2<mb)sp2=Math.max(0,ep2-mb);
+    if(sp2>0)pag+='<button onclick="goPage(0)" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;">First</button>';
+    for(var p=sp2;p<ep2;p++)pag+='<button onclick="goPage('+p+')" style="background:'+(p===itemPage?'var(--accent)':'var(--card)')+';color:'+(p===itemPage?'#fff':'var(--text)')+';border:1px solid var(--border);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;">'+(p+1)+'</button>';
+    if(ep2<pages)pag+='<button onclick="goPage('+(pages-1)+')" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;">Last</button>';
+  }
+  document.getElementById('itemPagination').innerHTML = pag;
+}
+
+function typeTag(t) {
+  if(t==='Raw Materials')return '<span class="tag tag-rm">Raw Mat</span>';
+  if(t==='Packaging Materials')return '<span class="tag tag-pm">Packaging</span>';
+  return '<span class="tag tag-other">'+t+'</span>';
+}
+
+function goPage(p){itemPage=p;renderItems();}
+
+function toggleMonthly(idx, key) {
+  var existing = document.getElementById('mr'+idx);
+  if(existing) { existing.remove(); expandedKey=null; return; }
+  
+  // Remove any existing expanded row
+  var old = document.querySelector('.monthly-row');
+  if(old) old.remove();
+  expandedKey = key;
+  
+  var monthlyData = (typeof MONTHLY_DATA !== 'undefined' && MONTHLY_DATA[key]) ? MONTHLY_DATA[key] : [];
+  if(monthlyData.length===0) return;
+  
+  // Build month columns
+  var months = [...new Set(monthlyData.map(d=>d.yr+'-'+String(d.mon).padStart(2,'0')))].sort();
+  var monthsShort = months.map(m=>{var parts=m.split('-');var mn=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return mn[+parts[1]]+" '"+parts[0].slice(2);});
+  
+  // Build column groups per month: value, qty
+  var headerHtml = '<tr><th>Period</th>';
+  monthsShort.forEach(m=>{ headerHtml += '<th>'+m+' Val</th><th>'+m+' Qty</th>'; });
+  headerHtml += '</tr>';
+  
+  var valueRow = '<tr><td style="font-weight:600;">Value (BDT)</td>';
+  var qtyRow = '<tr><td style="font-weight:600;">Quantity</td>';
+  var rateRow = '<tr><td style="font-weight:600;">Rate (BDT/Qty)</td>';
+  var txnRow = '<tr><td style="font-weight:600;">Transactions</td>';
+  
+  months.forEach(m=>{
+    var found = monthlyData.filter(d=>d.yr+'-'+String(d.mon).padStart(2,'0')===m);
+    var val = found.reduce((s,d)=>s+d.value,0);
+    var qty = found.reduce((s,d)=>s+d.qty,0);
+    var txn = found.reduce((s,d)=>s+d.txn,0);
+    var rate = qty !== 0 ? Math.abs(val / qty) : 0;
+    valueRow += '<td class="num">'+fmt(val)+'</td>';
+    qtyRow += '<td class="num">'+Math.abs(qty).toFixed(2)+'</td>';
+    rateRow += '<td class="num">'+rate.toFixed(2)+'</td>';
+    txnRow += '<td class="num">'+txn+'</td>';
+  });
+  valueRow += '</tr>'; qtyRow += '</tr>'; rateRow += '</tr>'; txnRow += '</tr>';
+  
+  var rowHtml = '<tr class="monthly-row" id="mr'+idx+'"><td colspan="10" style="padding:8px 10px;">'+
+    '<div id="dateRangeBar" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;font-size:11px;">'+
+      '<span style="color:var(--muted);">From:</span><input type="month" id="drFrom" value="2025-07" onchange="filterMonthly('+idx+',\''+key.replace(/'/g,"\\'")+'\')" style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:11px;">'+
+      '<span style="color:var(--muted);">To:</span><input type="month" id="drTo" value="2026-08" onchange="filterMonthly('+idx+',\''+key.replace(/'/g,"\\'")+'\')" style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:11px;">'+
+      '<span style="color:var(--muted);">Consumption Type:</span><span style="color:var(--accent);font-weight:600;">'+key.split('|')[2]+'</span>'+
+    '</div>'+
+    '<div class="monthly-scroll"><table class="tbl"><thead>'+headerHtml+'</thead><tbody>'+valueRow+qtyRow+rateRow+txnRow+'</tbody></table></div>'+
+    '</td></tr>';
+  
+  var targetRow = document.getElementById('ir'+idx);
+  targetRow.insertAdjacentHTML('afterend', rowHtml);
+}
+
+function filterMonthly(idx, key) {
+  var from = document.getElementById('drFrom').value;
+  var to = document.getElementById('drTo').value;
+  var monthlyData = (typeof MONTHLY_DATA !== 'undefined' && MONTHLY_DATA[key]) ? MONTHLY_DATA[key] : [];
+  
+  var filtered = monthlyData.filter(d=>{
+    var ym = d.yr+'-'+String(d.mon).padStart(2,'0');
+    return ym >= from && ym <= to;
+  });
+  
+  var months = [...new Set(filtered.map(d=>d.yr+'-'+String(d.mon).padStart(2,'0')))].sort();
+  var monthsShort = months.map(m=>{var parts=m.split('-');var mn=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return mn[+parts[1]]+" '"+parts[0].slice(2);});
+  
+  var headerHtml = '<tr><th>Period</th>';
+  monthsShort.forEach(m=>{ headerHtml += '<th>'+m+' Val</th><th>'+m+' Qty</th>'; });
+  headerHtml += '</tr>';
+  
+  var valueRow = '<tr><td style="font-weight:600;">Value (BDT)</td>';
+  var qtyRow = '<tr><td style="font-weight:600;">Quantity</td>';
+  var rateRow = '<tr><td style="font-weight:600;">Rate (BDT/Qty)</td>';
+  var txnRow = '<tr><td style="font-weight:600;">Transactions</td>';
+  
+  months.forEach(m=>{
+    var found = filtered.filter(d=>d.yr+'-'+String(d.mon).padStart(2,'0')===m);
+    var val = found.reduce((s,d)=>s+d.value,0);
+    var qty = found.reduce((s,d)=>s+d.qty,0);
+    var txn = found.reduce((s,d)=>s+d.txn,0);
+    var rate = qty !== 0 ? Math.abs(val / qty) : 0;
+    valueRow += '<td class="num">'+fmt(val)+'</td>';
+    qtyRow += '<td class="num">'+Math.abs(qty).toFixed(2)+'</td>';
+    rateRow += '<td class="num">'+rate.toFixed(2)+'</td>';
+    txnRow += '<td class="num">'+txn+'</td>';
+  });
+  valueRow += '</tr>'; qtyRow += '</tr>'; rateRow += '</tr>'; txnRow += '</tr>';
+  
+  var mr = document.getElementById('mr'+idx);
+  if(mr) {
+    mr.querySelector('.monthly-scroll').innerHTML = '<table class="tbl"><thead>'+headerHtml+'</thead><tbody>'+valueRow+qtyRow+rateRow+txnRow+'</tbody></table>';
+  }
+}
+
+function exportCSV() {
+  var rows = [['SBU','SBU Name','Material Type','Transaction Type','Item','Value','Quantity','Monthly Rate','Transactions']];
+  filteredItems.forEach(function(i){ var mr=0;var key=i.sbu+'|'+i.item+'|'+i.txnType;if(typeof MONTHLY_DATA!=='undefined'&&MONTHLY_DATA[key]){var md=MONTHLY_DATA[key];var tv=md.reduce(function(s,d){return s+Math.abs(d.value);},0);var um=new Set(md.map(function(d){return d.yr+'-'+d.mon;})).size;mr=um>0?tv/um:0;} rows.push([i.sbu,i.sbuName,i.type,i.txnType,'"'+i.item.replace(/"/g,'""')+'"',i.value,i.qty,mr.toFixed(2),i.txn]); });
+  var csv = rows.map(function(r){return r.join(',');}).join('\n');
+  var blob=new Blob([csv],{type:'text/csv'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');a.href=url;a.download='cogs_items_'+new Date().toISOString().split('T')[0]+'.csv';
+  a.click();URL.revokeObjectURL(url);
+}
+
+// ===== YoY RATE COMPARISON =====
+function initYoY() {
+  if (typeof YOY_DATA === 'undefined') { document.getElementById('yoyTable').innerHTML = '<p style="color:var(--muted);text-align:center;padding:20px;">yoy_data.js not loaded. Run fetch_yoy.js to generate.</p>'; return; }
+  var sbuSel = document.getElementById('yoySbuFilter');
+  [...new Set(YOY_DATA.map(d => d.sbu))].sort().forEach(c => { var o = document.createElement('option'); o.value = c; o.textContent = c; sbuSel.appendChild(o); });
+  
+  // Material type toggle buttons for YoY
+  var yoyTypes = [...new Set(YOY_DATA.map(d => d.mat_type))].sort();
+  var ytg = document.getElementById('yoyMatToggle');
+  var yallBtn = document.createElement('span');
+  yallBtn.className = 'mat-toggle active'; yallBtn.textContent = 'All'; yallBtn.dataset.val = 'all';
+  yallBtn.onclick = function(){ toggleMatYoY('all', this); };
+  ytg.appendChild(yallBtn);
+  yoyTypes.forEach(function(t){
+    var btn = document.createElement('span');
+    btn.className = 'mat-toggle'; btn.textContent = t; btn.dataset.val = t;
+    btn.onclick = function(){ toggleMatYoY(t, this); };
+    ytg.appendChild(btn);
+  });
+  
+  var txnSel = document.getElementById('yoyTxnFilter');
+  [...new Set(YOY_DATA.map(d => d.txn_type))].sort().forEach(t => { var o = document.createElement('option'); o.value = t; o.textContent = t; txnSel.appendChild(o); });
+  renderYoY();
+}
+
+var selectedYoyMatTypes = ['all'];
+function toggleMatYoY(val, el) {
+  if (val === 'all') {
+    selectedYoyMatTypes = ['all'];
+    document.querySelectorAll('#yoyMatToggle .mat-toggle').forEach(function(b){ b.classList.remove('active'); });
+    el.classList.add('active');
+  } else {
+    el.classList.toggle('active');
+    selectedYoyMatTypes = selectedYoyMatTypes.filter(function(v){ return v !== 'all'; });
+    if (el.classList.contains('active')) {
+      if (selectedYoyMatTypes.indexOf(val) === -1) selectedYoyMatTypes.push(val);
+    } else {
+      selectedYoyMatTypes = selectedYoyMatTypes.filter(function(v){ return v !== val; });
+    }
+    if (selectedYoyMatTypes.length === 0) {
+      selectedYoyMatTypes = ['all'];
+      document.querySelectorAll('#yoyMatToggle .mat-toggle')[0].classList.add('active');
+    } else {
+      document.querySelectorAll('#yoyMatToggle .mat-toggle')[0].classList.remove('active');
+    }
+  }
+  renderYoY();
+}
+
+function renderYoY() {
+  var sbu = document.getElementById('yoySbuFilter').value;
+  var mon = +document.getElementById('yoyMonthFilter').value;
+  var txn = document.getElementById('yoyTxnFilter').value;
+  var sort = document.getElementById('yoySortFilter').value;
+  var search = document.getElementById('yoySearch').value.toLowerCase();
+  
+  var filtered = YOY_DATA.filter(function(d){
+    if (sbu !== 'all' && d.sbu !== sbu) return false;
+    if (d.mon !== mon) return false;
+    if (selectedYoyMatTypes.indexOf('all') === -1 && selectedYoyMatTypes.indexOf(d.mat_type) === -1) return false;
+    if (txn !== 'all' && d.txn_type !== txn) return false;
+    if (search && !d.item_desc.toLowerCase().includes(search)) return false;
+    return true;
+  });
+  
+  if (sort === 'desc') filtered.sort(function(a,b){return b.impact - a.impact;});
+  else filtered.sort(function(a,b){return a.impact - b.impact;});
+  
+  var net = filtered.reduce(function(s,d){return s+d.impact;},0);
+  var pos = filtered.filter(function(d){return d.impact>0;}).length;
+  var neg = filtered.filter(function(d){return d.impact<0;}).length;
+  
+  document.getElementById('yoyNetImpact').textContent = fmt(net)+' BDT';
+  document.getElementById('yoyItemCount').textContent = filtered.length;
+  document.getElementById('yoyPosCount').textContent = pos;
+  document.getElementById('yoyNegCount').textContent = neg;
+  document.getElementById('yoyRange').textContent = 'Showing '+filtered.length+' items | Net Impact: '+fmt(net)+' BDT';
+  
+  var h = '<table class="tbl"><thead><tr><th>#</th><th>SBU</th><th>Item Code</th><th>Item Description</th><th>Mat Type</th><th>UoM</th><th>Type</th><th class="num">Last Yr Rate</th><th class="num">This Yr Rate</th><th class="num">This Yr Qty</th><th class="num">This Yr Value</th><th class="num">Impact</th></tr></thead><tbody>';
+  filtered.forEach(function(d,i){
+    var impClass = d.impact > 0 ? ' style="color:#e74c3c;"' : ' style="color:#10b981;"';
+    h += '<tr><td>'+(i+1)+'</td><td style="color:'+(sbuColors[d.sbu]||'var(--accent)')+'">'+d.sbu+'</td><td>'+d.item_code+'</td><td title="'+d.item_desc+'">'+d.item_desc.substring(0,50)+(d.item_desc.length>50?'...':'')+'</td><td>'+d.mat_type+'</td><td>'+d.uom+'</td><td style="font-size:10px;color:var(--muted);">'+d.txn_type+'</td><td class="num">'+d.rate_last.toFixed(2)+'</td><td class="num">'+d.rate_this.toFixed(2)+'</td><td class="num">'+Math.abs(d.qty_this).toFixed(2)+'</td><td class="num">'+fmt(d.value_this)+'</td><td class="num"'+impClass+'><strong>'+(d.impact>=0?'+':'')+fmt(d.impact)+'</strong></td></tr>';
+  });
+  h += '</tbody></table>';
+  document.getElementById('yoyTable').innerHTML = h;
+}
+
+function exportYoYCSV() {
+  var sbu = document.getElementById('yoySbuFilter').value;
+  var mon = +document.getElementById('yoyMonthFilter').value;
+  var txn = document.getElementById('yoyTxnFilter').value;
+  var filtered = YOY_DATA.filter(function(d){
+    if (sbu !== 'all' && d.sbu !== sbu) return false;
+    if (d.mon !== mon) return false;
+    if (selectedYoyMatTypes.indexOf('all') === -1 && selectedYoyMatTypes.indexOf(d.mat_type) === -1) return false;
+    if (txn !== 'all' && d.txn_type !== txn) return false;
+    return true;
+  });
+  var rows = [['SBU','Item Code','Item Description','Mat Type','UoM','Txn Type','Last Yr Rate','This Yr Rate','This Yr Qty','This Yr Value','Impact']];
+  filtered.forEach(function(d){rows.push([d.sbu,d.item_code,'"'+d.item_desc.replace(/"/g,'""')+'"',d.mat_type,d.uom,d.txn_type,d.rate_last,d.rate_this,d.qty_this,d.value_this,d.impact]);});
+  var csv = rows.map(function(r){return r.join(',');}).join('\n');
+  var blob = new Blob([csv],{type:'text/csv'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');a.href=url;a.download='yoy_rates_'+new Date().toISOString().split('T')[0]+'.csv';
+  a.click();URL.revokeObjectURL(url);
+}
+
+// ===== SLOB (AAFL + HRML + FAL) =====
+var SLOB_SBUS = ['AAFL','HRML','FAL'];
+
+function initSlob() {
+  var sbuSel = document.getElementById('slobSbuFilter');
+  if (!sbuSel) return;
+  // ensure all SLOB_SBUS options exist (HTML may have stale static options)
+  var labels={AAFL:'AAFL (Akij Agro Feed)',HRML:'HRML (Hashem Rice Mills)',FAL:'FAL (Fariq Agro Ltd.)'};
+  var existing = {}; for(var i=0;i<sbuSel.options.length;i++) existing[sbuSel.options[i].value]=true;
+  var needsRebuild = SLOB_SBUS.some(function(s){return !existing[s];});
+  if (needsRebuild || sbuSel.options.length===0) {
+    sbuSel.innerHTML='';
+    SLOB_SBUS.forEach(function(s){ var o=document.createElement('option'); o.value=s; o.textContent=labels[s]||s; sbuSel.appendChild(o); });
+  }
+  sbuSel.onchange = function(){ populateSlobPeriods(sbuSel.value); renderSlob(); };
+  populateSlobPeriods(sbuSel.value);
+  renderSlob();
+}
+
+function populateSlobPeriods(sbu) {
+  var per = document.getElementById('slobPeriodFilter');
+  if (!per) return;
+  per.innerHTML = '';
+  per.onchange = renderSlob;
+  var map={AAFL: (typeof SLOB_AAFL!=='undefined'?SLOB_AAFL:null), HRML: (typeof SLOB_HRML!=='undefined'?SLOB_HRML:null), FAL: (typeof SLOB_FAL!=='undefined'?SLOB_FAL:null)};
+  var src=map[sbu];
+  if (sbu==='AAFL' && src) {
+    Object.keys(src.periods).sort().reverse().forEach(function(p){ var o=document.createElement('option'); o.value=p; o.textContent=(p==='2026-08'?'Aug 2026':(p==='2026-07'?'Jul 2026':p)); per.appendChild(o); });
+  } else if (sbu==='FAL' && src) {
+    Object.keys(src.periods).sort().reverse().forEach(function(p){ var o=document.createElement('option'); o.value=p; o.textContent=(p==='2026-08'?'Aug 2026':(p==='2026-07'?'Jul 2026':p)); per.appendChild(o); });
+  } else if (sbu === 'HRML') {
+    // HRML currently has flat values (single window) OR periodised if upgraded; handle both
+    if (src && src.periods) {
+      Object.keys(src.periods).sort().reverse().forEach(function(p){ var o=document.createElement('option'); o.value=p; o.textContent=(p==='2026-08'?'Aug 2026':(p==='2026-07'?'Jul 2026':p)); per.appendChild(o); });
+    } else {
+      var o=document.createElement('option'); o.value='6m'; o.textContent='6-mo (Mar–Aug 26)'; per.appendChild(o);
+    }
+  }
+}
+
+function slobSortValue(){ var e=document.getElementById('slobSortFilter'); return e?e.value:'value_desc'; }
+function applySlobSort(arr, mode){
+  if(mode==='value_asc') arr.sort(function(a,b){return (a.closingValue||0)-(b.closingValue||0);});
+  else if(mode==='alpha') arr.sort(function(a,b){return a.item.localeCompare(b.item);});
+  else arr.sort(function(a,b){return (b.closingValue||0)-(a.closingValue||0);});
+}
+function renderSlob() {
+  var sbu = document.getElementById('slobSbuFilter').value;
+  var type = document.getElementById('slobTypeFilter').value;
+  var zero = document.getElementById('slobZeroFilter').value;
+  var search = document.getElementById('slobSearch').value.toLowerCase();
+  var sort = slobSortValue();
+  if (sbu === 'AAFL') return renderSlobAAFL(type, zero, search, sort);
+  if (sbu === 'HRML') return renderSlobHRML(type, zero, search, sort);
+  if (sbu === 'FAL') return renderSlobFAL(type, zero, search, sort);
+}
+
+function renderSlobAAFL(type, zero, search, sort) {
+  if (typeof SLOB_AAFL === 'undefined') { document.getElementById('slobTable').innerHTML = '<p style="color:var(--muted);padding:20px;">slob_aafl.js not loaded.</p>'; return; }
+  var period = (document.getElementById('slobPeriodFilter') ? document.getElementById('slobPeriodFilter').value : '2026-08') || '2026-08';
+  var P = SLOB_AAFL.periods[period] || SLOB_AAFL.periods['2026-08'];
+  var V = P.values, c = P.counts;
+  var rmTot = V.RM.total*1e7, rmSlob = V.RM.slob*1e7, pmTot = V.PM.total*1e7, pmSlob = V.PM.slob*1e7;
+  var rmActive = rmTot - rmSlob, pmActive = pmTot - pmSlob;
+  var rmActCnt = c.rmItems - c.rmSlob, pmActCnt = c.pmItems - c.pmSlob;
+  setSlobKpis('RM SLOB Value','PM SLOB Value','RM SLOB % of Stock','PM SLOB % of Stock',
+    fmt(rmSlob), fmt(pmSlob), (rmTot>0?(rmSlob/rmTot*100).toFixed(2):'0.00')+'%', (pmTot>0?(pmSlob/pmTot*100).toFixed(2):'0.00')+'%');
+  drawSlobPie('slobPieRM', rmSlob, rmActive,
+    'RM SLOB ('+fmt(rmSlob)+' | '+c.rmSlob+' items)',
+    'RM Active ('+fmt(rmActive)+' | '+rmActCnt+' items)');
+  drawSlobPie('slobPiePM', pmSlob, pmActive,
+    'PM SLOB ('+fmt(pmSlob)+' | '+c.pmSlob+' items)',
+    'PM Active ('+fmt(pmActive)+' | '+pmActCnt+' items)');
+  document.getElementById('slobPieRMCap').innerHTML = 'RM Total: <b>'+V.RM.total.toFixed(2)+' Cr</b> / '+c.rmItems+' items &nbsp;|&nbsp; RM SLOB: <b>'+V.RM.slob.toFixed(2)+' Cr</b> / '+c.rmSlob+' items ('+V.RM.pct+'%)';
+  document.getElementById('slobPiePMCap').innerHTML = 'PM Total: <b>'+V.PM.total.toFixed(2)+' Cr</b> / '+c.pmItems+' items &nbsp;|&nbsp; PM SLOB: <b>'+V.PM.slob.toFixed(2)+' Cr</b> / '+c.pmSlob+' items ('+V.PM.pct+'%)';
+  var rows = P.items;
+  var filtered = rows.filter(function(r){ if(type!=='all'&&r.type!==type)return false; if(zero==='slob'&&!r.zeroCons)return false; if(search&&!r.item.toLowerCase().includes(search)&&!(r.itemCode||'').toLowerCase().includes(search))return false; return true; });
+  applySlobSort(filtered, sort || slobSortValue());
+  document.getElementById('slobRange').textContent = 'AAFL | '+(period==='2026-08'?'Aug 2026':'Jul 2026')+' (DataMart.inv.tblInventoryStatement) | RM SLOB '+V.RM.slob.toFixed(2)+' Cr ('+c.rmSlob+' items) | PM SLOB '+V.PM.slob.toFixed(2)+' Cr ('+c.pmSlob+' items) | Total Inv '+V.totalInv.toFixed(2)+' Cr';
+  var h = '<table class="tbl"><thead><tr><th>#</th><th>Item Code</th><th>Item</th><th>Type</th><th class="num">Closing Value</th><th class="num">6-mo Consumed? (neg qty)</th><th>Flag</th></tr></thead><tbody>';
+  var idx=0;
+  filtered.forEach(function(r){ if(zero==='slob'&&!r.zeroCons)return; idx++; h += '<tr><td>'+idx+'</td><td style="font-size:10px;color:var(--muted)">'+esc(r.itemCode||'')+'</td><td title="'+esc(r.item)+'">'+esc(r.item.substring(0,60))+(r.item.length>60?'...':'')+'</td><td>'+r.type+'</td><td class="num">'+fmt(r.closingValue)+'</td><td class="num">'+(r.zeroCons?'No (SLOB)':(r.neg6||0)+' txns')+'</td><td>'+(r.zeroCons?'<span class="tag tag-rm">SLOB</span>':'<span class="tag tag-green">Active</span>')+'</td></tr>'; });
+  if (idx===0) h += '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:14px;">No items match the current filter.</td></tr>';
+  h += '</tbody></table>';
+  h += '<p style="color:var(--muted);font-size:10px;margin-top:6px;">* AAFL closing value from <b>DataMart.inv.tblInventoryStatement</b> (ClosingStock × AvgRate), latest snapshot per item. SLOB = items with zero negative-quantity transactions in the 6-month window. RM/PM classification is keyword-based. Item Code from <b>itm.tblItemArc</b> (latest active mapping).</p>';
+  document.getElementById('slobTable').innerHTML = h;
+}
+
+function renderSlobFAL(type, zero, search, sort) {
+  if (typeof SLOB_FAL === 'undefined') { document.getElementById('slobTable').innerHTML = '<p style="color:var(--muted);padding:20px;">slob_fal.js not loaded. Run fetch_slob_fal.js on office network.</p>'; return; }
+  var period = (document.getElementById('slobPeriodFilter') ? document.getElementById('slobPeriodFilter').value : '2026-08') || '2026-08';
+  var P = SLOB_FAL.periods[period] || SLOB_FAL.periods['2026-08'];
+  var V = P.values, c = P.counts;
+  var rmTot = V.RM.total*1e7, rmSlob = V.RM.slob*1e7, pmTot = V.PM.total*1e7, pmSlob = V.PM.slob*1e7;
+  var rmActive = rmTot - rmSlob, pmActive = pmTot - pmSlob;
+  var rmActCnt = c.rmItems - c.rmSlob, pmActCnt = c.pmItems - c.pmSlob;
+  setSlobKpis('RM SLOB Value','PM SLOB Value','RM SLOB % of Stock','PM SLOB % of Stock',
+    fmt(rmSlob), fmt(pmSlob), (rmTot>0?(rmSlob/rmTot*100).toFixed(2):'0.00')+'%', (pmTot>0?(pmSlob/pmTot*100).toFixed(2):'0.00')+'%');
+  drawSlobPie('slobPieRM', rmSlob, rmActive,
+    'RM SLOB ('+fmt(rmSlob)+' | '+c.rmSlob+' items)',
+    'RM Active ('+fmt(rmActive)+' | '+rmActCnt+' items)');
+  drawSlobPie('slobPiePM', pmSlob, pmActive,
+    'PM SLOB ('+fmt(pmSlob)+' | '+c.pmSlob+' items)',
+    'PM Active ('+fmt(pmActive)+' | '+pmActCnt+' items)');
+  document.getElementById('slobPieRMCap').innerHTML = 'RM Total: <b>'+V.RM.total.toFixed(2)+' Cr</b> / '+c.rmItems+' items &nbsp;|&nbsp; RM SLOB: <b>'+V.RM.slob.toFixed(2)+' Cr</b> / '+c.rmSlob+' items ('+V.RM.pct+'%)';
+  document.getElementById('slobPiePMCap').innerHTML = 'PM Total: <b>'+V.PM.total.toFixed(2)+' Cr</b> / '+c.pmItems+' items &nbsp;|&nbsp; PM SLOB: <b>'+V.PM.slob.toFixed(2)+' Cr</b> / '+c.pmSlob+' items ('+V.PM.pct+'%)';
+  var rows = P.items;
+  var filtered = rows.filter(function(r){ if(type!=='all'&&r.type!==type)return false; if(zero==='slob'&&!r.zeroCons)return false; if(search&&!r.item.toLowerCase().includes(search)&&!(r.itemCode||'').toLowerCase().includes(search))return false; return true; });
+  applySlobSort(filtered, sort || slobSortValue());
+  document.getElementById('slobRange').textContent = 'FAL | '+(period==='2026-08'?'Aug 2026':'Jul 2026')+' (DataMart.inv.tblInventoryStatement) | RM SLOB '+V.RM.slob.toFixed(2)+' Cr ('+c.rmSlob+' items) | PM SLOB '+V.PM.slob.toFixed(2)+' Cr ('+c.pmSlob+' items) | Other SLOB '+V.Other.slob.toFixed(2)+' Cr | Total Inv '+V.totalInv.toFixed(2)+' Cr';
+  var h = '<table class="tbl"><thead><tr><th>#</th><th>Item Code</th><th>Item</th><th>Type</th><th class="num">Closing Value</th><th class="num">6-mo Consumed? (neg qty)</th><th>Flag</th></tr></thead><tbody>';
+  var idx=0;
+  filtered.forEach(function(r){ if(zero==='slob'&&!r.zeroCons)return; idx++; h += '<tr><td>'+idx+'</td><td style="font-size:10px;color:var(--muted)">'+esc(r.itemCode||'')+'</td><td title="'+esc(r.item)+'">'+esc(r.item.substring(0,60))+(r.item.length>60?'...':'')+'</td><td>'+r.type+'</td><td class="num">'+fmt(r.closingValue)+'</td><td class="num">'+(r.zeroCons?'No (SLOB)':(r.neg6||0)+' txns')+'</td><td>'+(r.zeroCons?'<span class="tag tag-rm">SLOB</span>':'<span class="tag tag-green">Active</span>')+'</td></tr>'; });
+  if (idx===0) h += '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:14px;">No items match the current filter.</td></tr>';
+  h += '</tbody></table>';
+  h += '<p style="color:var(--muted);font-size:10px;margin-top:6px;">* FAL (Fariq Agro Ltd.) closing value from <b>DataMart.inv.tblInventoryStatement</b> (ClosingStock × AvgRate), latest snapshot per item/warehouse. SLOB = zero negative-quantity transactions in the trailing 6 months. Other = engineering spares &amp; non-RM/PM. Item Code from <b>itm.tblItemArc</b>.</p>';
+  document.getElementById('slobTable').innerHTML = h;
+}
+
+function renderSlobHRML(type, zero, search, sort) {
+  if (typeof SLOB_HRML === 'undefined') { document.getElementById('slobTable').innerHTML = '<p style="color:var(--muted);padding:20px;">slob_hrml.js not loaded.</p>'; return; }
+  // support both flat (values/counts/items) and periodised (periods) shapes
+  var period = (document.getElementById('slobPeriodFilter') ? document.getElementById('slobPeriodFilter').value : '') || '';
+  var P = null, V, c, rows;
+  if (SLOB_HRML.periods) {
+    P = SLOB_HRML.periods[period] || SLOB_HRML.periods[Object.keys(SLOB_HRML.periods).sort().reverse()[0]];
+    V = P.values; c = P.counts; rows = P.items;
+  } else {
+    V = SLOB_HRML.values; c = SLOB_HRML.counts; rows = SLOB_HRML.items;
+  }
+  var rmTot = V.RM.total*1e7, rmSlob = V.RM.slob*1e7, pmTot = V.PM.total*1e7, pmSlob = V.PM.slob*1e7;
+  var rmActCnt = c.rmItems - c.rmSlob, pmActCnt = c.pmItems - c.pmSlob;
+  setSlobKpis('RM SLOB Value','PM SLOB Value','RM SLOB % of Stock','PM SLOB % of Stock',
+    fmt(rmSlob), fmt(pmSlob), (rmTot>0?(rmSlob/rmTot*100).toFixed(2):'0.00')+'%', (pmTot>0?(pmSlob/pmTot*100).toFixed(2):'0.00')+'%');
+  drawSlobPie('slobPieRM', rmSlob, rmTot - rmSlob,
+    'RM SLOB ('+fmt(rmSlob)+' | '+c.rmSlob+' items)',
+    'RM Active ('+fmt(rmTot - rmSlob)+' | '+rmActCnt+' items)');
+  drawSlobPie('slobPiePM', pmSlob, pmTot - pmSlob,
+    'PM SLOB ('+fmt(pmSlob)+' | '+c.pmSlob+' items)',
+    'PM Active ('+fmt(pmTot - pmSlob)+' | '+pmActCnt+' items)');
+  document.getElementById('slobPieRMCap').innerHTML = 'RM Total: <b>'+V.RM.total.toFixed(2)+' Cr</b> / '+c.rmItems+' items &nbsp;|&nbsp; RM SLOB: <b>'+V.RM.slob.toFixed(2)+' Cr</b> / '+c.rmSlob+' items ('+V.RM.pct+'%)';
+  document.getElementById('slobPiePMCap').innerHTML = 'PM Total: <b>'+V.PM.total.toFixed(2)+' Cr</b> / '+c.pmItems+' items &nbsp;|&nbsp; PM SLOB: <b>'+V.PM.slob.toFixed(2)+' Cr</b> / '+c.pmSlob+' items ('+V.PM.pct+'%)';
+  var filtered = rows.filter(function(r){ if(type!=='all'&&r.type!==type)return false; if(zero==='slob'&&!r.zeroCons)return false; if(search&&!r.item.toLowerCase().includes(search)&&!(r.itemCode||'').toLowerCase().includes(search))return false; return true; });
+  applySlobSort(filtered, sort || slobSortValue());
+  if (P) document.getElementById('slobRange').textContent = 'HRML | '+(period||Object.keys(SLOB_HRML.periods).sort().reverse()[0])+' (DataMart.inv.tblInventoryStatement) | RM SLOB '+V.RM.slob.toFixed(2)+' Cr ('+c.rmSlob+' items) | PM SLOB '+V.PM.slob.toFixed(2)+' Cr ('+c.pmSlob+' items) | Total Inv '+V.totalInv.toFixed(2)+' Cr';
+  else document.getElementById('slobRange').textContent = 'HRML | '+SLOB_HRML.window+' (DataMart.inv.tblInventoryStatement) | RM SLOB '+V.RM.slob.toFixed(2)+' Cr ('+c.rmSlob+' items) | PM SLOB '+V.PM.slob.toFixed(2)+' Cr ('+c.pmSlob+' items) | Total Inv '+V.totalInv.toFixed(2)+' Cr';
+  var h = '<table class="tbl"><thead><tr><th>#</th><th>Item Code</th><th>Item</th><th>Type</th><th class="num">Closing Value</th><th class="num">6-mo Consumed? (neg qty)</th><th>Flag</th></tr></thead><tbody>';
+  var idx=0;
+  filtered.forEach(function(r){ if(zero==='slob'&&!r.zeroCons)return; idx++; h += '<tr><td>'+idx+'</td><td style="font-size:10px;color:var(--muted)">'+esc(r.itemCode||'')+'</td><td title="'+esc(r.item)+'">'+esc(r.item.substring(0,60))+(r.item.length>60?'...':'')+'</td><td>'+r.type+'</td><td class="num">'+fmt(r.closingValue)+'</td><td class="num">'+(r.zeroCons?'No (SLOB)':(r.neg6||0)+' txns')+'</td><td>'+(r.zeroCons?'<span class="tag tag-rm">SLOB</span>':'<span class="tag tag-green">Active</span>')+'</td></tr>'; });
+  if (idx===0) h += '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:14px;">No items match the current filter.</td></tr>';
+  h += '</tbody></table>';
+  h += '<p style="color:var(--muted);font-size:10px;margin-top:6px;">* HRML closing value from <b>DataMart.inv.tblInventoryStatement</b> (ClosingStock × AvgRate), latest snapshot per item. SLOB = items with zero negative-quantity transactions in the 6-month window. RM/PM classification is keyword-based and may need finance mapping refinement. Item Code from <b>itm.tblItemArc</b>.</p>';
+  document.getElementById('slobTable').innerHTML = h;
+}
+
+function setSlobKpis(l1,l2,l3,l4,v1,v2,v3,v4) {
+  document.getElementById('slobRmValue').textContent = v1;
+  document.getElementById('slobPmValue').textContent = v2;
+  document.getElementById('slobRmPct').textContent = v3;
+  document.getElementById('slobPmPct').textContent = v4;
+  setText('slobRmLbl', l1); setText('slobPmLbl', l2); setText('slobRmPctLbl', l3); setText('slobPmPctLbl', l4);
+}
+function setText(id,t){ var e=document.getElementById(id); if(e) e.textContent=t; }
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function drawSlobPie(canvasId, slobArc, activeArc, slobLabel, activeLabel) {
+  if (window._slobPies === undefined) window._slobPies = {};
+  if (window._slobPies[canvasId]) { window._slobPies[canvasId].destroy(); }
+  var ctx = document.getElementById(canvasId).getContext('2d');
+  window._slobPies[canvasId] = new Chart(ctx, {
+    type:'doughnut',
+    data:{ labels:[slobLabel, activeLabel],
+      datasets:[{ data:[slobArc, activeArc], backgroundColor:['#e74c3c','#10b981'], borderColor:'#fff', borderWidth:2 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{position:'bottom',labels:{color:'#6b7280',font:{size:9},padding:6,boxWidth:12}}, tooltip:{callbacks:{label:function(c){ return c.label; }}} } }
+  });
+}
+
+function exportSlobCSV() {
+  var sbu = document.getElementById('slobSbuFilter').value;
+  var type = document.getElementById('slobTypeFilter').value;
+  var zero = document.getElementById('slobZeroFilter').value;
+  var search = document.getElementById('slobSearch').value.toLowerCase();
+  var period = (document.getElementById('slobPeriodFilter') ? document.getElementById('slobPeriodFilter').value : '') || '';
+  var sort = slobSortValue();
+  var rows;
+  function filterRows(items){ return items.filter(function(r){ if(type!=='all'&&r.type!==type)return false; if(zero==='slob'&&!r.zeroCons)return false; if(search&&!r.item.toLowerCase().includes(search)&&!(r.itemCode||'').toLowerCase().includes(search))return false; return true; }); }
+  if (sbu === 'FAL' && typeof SLOB_FAL !== 'undefined') {
+    var per = period || Object.keys(SLOB_FAL.periods).sort().reverse()[0];
+    var frows = filterRows((SLOB_FAL.periods[per]||SLOB_FAL.periods[Object.keys(SLOB_FAL.periods)[0]]).items); applySlobSort(frows, sort);
+    rows = [['SBU','Item Code','Item','Type','Closing Value','6-mo Negative-Qty Txn Count','SLOB Flag','Period']];
+    frows.forEach(function(r){ rows.push(['FAL',r.itemCode||'','"'+r.item.replace(/"/g,'""')+'"',r.type,r.closingValue,r.neg6,r.zeroCons?'SLOB':'',per]); });
+  } else if (sbu === 'AAFL' && typeof SLOB_AAFL !== 'undefined') {
+    var per2 = period || Object.keys(SLOB_AAFL.periods).sort().reverse()[0];
+    var arows = filterRows((SLOB_AAFL.periods[per2]||SLOB_AAFL.periods[Object.keys(SLOB_AAFL.periods)[0]]).items); applySlobSort(arows, sort);
+    rows = [['SBU','Item Code','Item','Type','Closing Value','6-mo Negative-Qty Txn Count','SLOB Flag','Period']];
+    arows.forEach(function(r){ rows.push(['AAFL',r.itemCode||'','"'+r.item.replace(/"/g,'""')+'"',r.type,r.closingValue,r.neg6,r.zeroCons?'SLOB':'',per2]); });
+  } else if (sbu === 'HRML' && typeof SLOB_HRML !== 'undefined') {
+    var hrows;
+    if (SLOB_HRML.periods) {
+      var per3 = period || Object.keys(SLOB_HRML.periods).sort().reverse()[0];
+      hrows = filterRows((SLOB_HRML.periods[per3]||SLOB_HRML.periods[Object.keys(SLOB_HRML.periods)[0]]).items); applySlobSort(hrows, sort);
+      rows = [['SBU','Item Code','Item','Type','Closing Value','6-mo Negative-Qty Txn Count','SLOB Flag','Period']];
+      hrows.forEach(function(r){ rows.push(['HRML',r.itemCode||'','"'+r.item.replace(/"/g,'""')+'"',r.type,r.closingValue,r.neg6,r.zeroCons?'SLOB':'',per3]); });
+    } else {
+      hrows = filterRows(SLOB_HRML.items); applySlobSort(hrows, sort);
+      rows = [['SBU','Item Code','Item','Type','Closing Value','6-mo Negative-Qty Txn Count','SLOB Flag']];
+      hrows.forEach(function(r){ rows.push(['HRML',r.itemCode||'','"'+r.item.replace(/"/g,'""')+'"',r.type,r.closingValue,r.neg6,r.zeroCons?'SLOB':'']); });
+    }
+  } else {
+    if (typeof SLOB_DATA === 'undefined') return;
+    var legacy = SLOB_DATA.filter(function(r){
+      if(r.sbu!==sbu)return false; if(type!=='all'&&r.type!==type)return false; if(zero==='slob'&&!r.zeroCons)return false; if(search&&!r.item.toLowerCase().includes(search))return false; return true;
+    });
+    rows = [['SBU','Item','Type','Closing Value','Inward','Outward','6-mo Shop-Floor Cons','SLOB Flag']];
+    legacy.forEach(function(r){ rows.push([r.sbu,'"'+r.item.replace(/"/g,'""')+'"',r.type,r.closing,r.inward,r.outward,r.shopFloorCons,r.zeroCons?'SLOB':'']); });
+  }
+  var csv = rows.map(function(r){return r.join(',');}).join('\n');
+  var blob = new Blob([csv],{type:'text/csv'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');a.href=url;a.download='slob_'+sbu+'_'+new Date().toISOString().split('T')[0]+'.csv';
+  a.click();URL.revokeObjectURL(url);
+}
+
+// SBU code->name map used by SLOB filters
+var SBU_NAMES2 = { ACCL:'ACCL Akij Cement', AIL:'AIL Akij Ispat', AEL:'AEL Akij Essential', APFIL:'APFIL Akij Poly Fibre', ARMCL:'ARMCL', ABSL:'ABSL Akij Building Solutions', HRML:'HRML Hashem Rice', FAL:'FAL Fariq Agro', AAFL:'AAFL Akij Agro Feed', ALEL:'ALEL Akij Light Engineering' };
+
+// ===== AUTO REFRESH =====
+function scheduleRefresh() {
+  var now=new Date();
+  var next=new Date(now);next.setHours(7,0,0,0);
+  if(next<=now)next.setDate(next.getDate()+1);
+  setTimeout(function(){location.reload();},Math.min(next-now,3600000));
+}
+
+// ===== INIT =====
+function init() {
+  var sbuSelect=document.getElementById('sbuFilter');
+  rawData.summary.forEach(s=>{var o=document.createElement('option');o.value=s.code;o.textContent=s.name+' ('+s.code+')';sbuSelect.appendChild(o);});
+  generateInsights();
+  updateKPIs();
+  chartCogsBySbu();
+  chartRmPm();
+  initDaily();
+  chartDaily();
+  chartMix();
+  buildDetailTable('cogs');
+  initItems();
+  initYoY();
+  initSlob();
+}
+
+init();
+scheduleRefresh();
+</script>
+</body>
+</html>

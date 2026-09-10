@@ -1,0 +1,5 @@
+﻿# keep secrets / cache out
+node_modules/
+*.log
+logs/
+.opencode/skills/*/node_modules/
