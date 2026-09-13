@@ -247,6 +247,8 @@ canvas { max-height: 340px; }
 
   <p style="color:var(--muted);font-size:12px;margin-bottom:12px;">A material is <b>SLOB</b> when it had <b>zero consumption (negative quantity) from the 1st day of the month 6 months back until today</b> (e.g. Mar 1 → Sep 13); <b>SLOB value = sum of closing values</b> of those items. All three SBUs source value from <b>DataMart.inv.tblInventoryStatement</b> (ClosingStock × AvgRate, latest per item/warehouse). RM/PM split is keyword-based.</p>
 
+  <div class="insight-box" id="slobInsightsBox" style="margin-bottom:12px; background: linear-gradient(135deg, #fffbeb, #f8f9fb); border-color: #f59e0b;"><h3>AI INSIGHTS — SLOB</h3><div id="slobInsights"></div></div>
+
   <div class="grid cols-2" style="margin-bottom:12px;">
     <div class="card" style="padding:14px;"><h3 style="font-size:12px;margin-bottom:10px;">RM SLOB vs Total</h3><canvas id="slobPieRM" height="170"></canvas><div id="slobPieRMCap" style="font-size:10px;color:var(--muted);margin-top:6px;line-height:1.4;"></div></div>
     <div class="card" style="padding:14px;"><h3 style="font-size:12px;margin-bottom:10px;">PM SLOB vs Total</h3><canvas id="slobPiePM" height="170"></canvas><div id="slobPiePMCap" style="font-size:10px;color:var(--muted);margin-top:6px;line-height:1.4;"></div></div>
@@ -278,6 +280,9 @@ canvas { max-height: 340px; }
     </div>
   </div>
   <p style="color:var(--muted);font-size:12px;margin-bottom:12px;">Same SLOB definition (<b>zero consumption from 1st of month 6 months back to today</b>), but <b>closing value = ClosingStock × <code>itm.tblItemArc.numAverageRate</code></b> (master rate, iBOS) instead of `DataMart AvgRate`. Use this to compare with the statement-based SLOB above. Example: <code>Hessian Jute Bag 50kg (1111341) 151,063 × 55.5 = 83,83,996 (iBOS) vs 151,063 × 30.53 = 46,12,103 (statement)</code>.</p>
+
+  <div class="insight-box" id="slobIbosInsightsBox" style="margin-bottom:12px; background: linear-gradient(135deg, #eff6ff, #f8f9fb); border-color: #1e40af;"><h3>AI INSIGHTS — SLOB (iBOS)</h3><div id="slobIbosInsights"></div></div>
+
   <div class="grid cols-2" style="margin-bottom:12px;">
     <div class="card" style="padding:14px;"><h3 style="font-size:12px;margin-bottom:10px;">RM SLOB vs Total (iBOS)</h3><canvas id="slobIbosPieRM" height="170"></canvas><div id="slobIbosPieRMCap" style="font-size:10px;color:var(--muted);margin-top:6px;line-height:1.4;"></div></div>
     <div class="card" style="padding:14px;"><h3 style="font-size:12px;margin-bottom:10px;">PM SLOB vs Total (iBOS)</h3><canvas id="slobIbosPiePM" height="170"></canvas><div id="slobIbosPiePMCap" style="font-size:10px;color:var(--muted);margin-top:6px;line-height:1.4;"></div></div>
@@ -360,6 +365,47 @@ function generateInsights() {
   
   h += '<div class="insight-item"><span></span><div><strong style="color:var(--muted)">Data:</strong> Accounting Journal + Inventory Transactions. 42 trading days, 10 SBUs. Last refreshed: '+new Date().toLocaleDateString()+'</div></div>';
   document.getElementById('insights-content').innerHTML = h;
+}
+
+// ===== SLOB AI INSIGHTS (shared helper) =====
+function buildSlobInsightsHTML(SBU, period, P, allPeriods, isIbos){
+  var V=P.values, c=P.counts, items=P.items||[];
+  var slobItems=items.filter(function(r){return r.zeroCons;}).sort(function(a,b){return b.closingValue-a.closingValue;});
+  var top3=slobItems.slice(0,3);
+  var rmSlob=V.RM.slob*1e7, pmSlob=V.PM.slob*1e7, otherSlob=(V.Other?V.Other.slob*1e7:0), totalSlob=V.slobTotal*1e7, totalInv=V.totalInv*1e7;
+  var slobPct=totalInv>0? (totalSlob/totalInv*100).toFixed(1):'0.0';
+  var rmPct=V.RM.total>0?(V.RM.slob/V.RM.total*100).toFixed(1):'0.0';
+  var pmPct=V.PM.total>0?(V.PM.slob/V.PM.total*100).toFixed(1):'0.0';
+  // MoM if previous period exists
+  var keys=Object.keys(allPeriods).sort(); var idx=keys.indexOf(period); var prevKey=idx>0?keys[idx-1]:null; var prev=null; var mom='';
+  if(prevKey && allPeriods[prevKey]){ prev=allPeriods[prevKey]; var diff=totalSlob - prev.values.slobTotal*1e7; var diffPct=prev.values.slobTotal>0?(diff/(prev.values.slobTotal*1e7)*100):0; mom='<div class="insight-item"><span></span><div><strong>MoM Change ('+fmtPeriod(prevKey)+' → '+fmtPeriod(period)+'):</strong> '+(diff>=0?'+':'')+fmt(diff)+' ('+(diffPct>=0?'+':'')+diffPct.toFixed(1)+'%) '+(diff>0?'<span style="color:var(--red)">▲ SLOB up</span>':'<span style="color:var(--green)">▼ SLOB down</span>')+'.</div></div>'; }
+  var h='';
+  var logicLabel=isIbos? 'iBOS (master rate)':'statement (AvgRate)';
+  h+='<div class="insight-item"><span></span><div><strong>'+SBU+' — '+fmtPeriod(period)+' ('+logicLabel+'):</strong> Total SLOB <span style="color:var(--red)">'+fmt(totalSlob)+'</span> / '+fmt(totalInv)+' ('+slobPct+'% of stock) across '+c.totalSlob+'/'+c.totalItems+' items. RM '+fmt(rmSlob)+' ('+rmPct+'% of RM), PM '+fmt(pmSlob)+' ('+pmPct+'% of PM)'+(otherSlob>0?', Other '+fmt(otherSlob):'')+'.</div></div>';
+  if(top3.length){
+    h+='<div class="insight-item"><span></span><div><strong>Top SLOB items by value:</strong> '+top3.map(function(r,i){return (i+1)+'. '+esc(r.item.substring(0,45))+' ('+(r.itemCode||'')+') — '+fmt(r.closingValue)+' ['+r.type+']';}).join(' | ')+'</div></div>';
+    var conc=top3.reduce(function(s,r){return s+r.closingValue;},0)/ (totalSlob||1) *100;
+    h+='<div class="insight-item"><span></span><div><strong>Concentration:</strong> Top 3 SLOB items = '+conc.toFixed(1)+'% of total SLOB'+(conc>50?' <span style="color:var(--red)">— highly concentrated, act on these first</span>':'')+'.</div></div>';
+  }
+  if(c.totalSlob > c.totalItems*0.5) h+='<div class="insight-item"><span></span><div><strong style="color:var(--red)">Breadth Alert:</strong> '+(c.totalSlob/c.totalItems*100).toFixed(0)+'% of items are SLOB ('+c.totalSlob+' items) — slow-moving breadth is high.</div></div>';
+  else if(c.totalSlob > 20) h+='<div class="insight-item"><span></span><div><strong>Breadth:</strong> '+c.totalSlob+' SLOB items ('+(c.totalSlob/c.totalItems*100).toFixed(0)+'% of SKU count).</div></div>';
+  if(mom) h+=mom;
+  // RM vs PM insight
+  if(rmSlob>pmSlob*3) h+='<div class="insight-item"><span></span><div><strong>Mix:</strong> RM SLOB dominates ('+fmt(rmSlob)+' vs PM '+fmt(pmSlob)+') — review RM planning / paddy aging.</div></div>';
+  else if(pmSlob>rmSlob) h+='<div class="insight-item"><span></span><div><strong>Mix:</strong> PM SLOB > RM SLOB — check packaging MOQs / bag forecasts.</div></div>';
+  // actionable
+  if(slobPct>15) h+='<div class="insight-item"><span></span><div><strong style="color:var(--red)">Action:</strong> SLOB &gt;15% of inventory — consider write-down review, transfer, or promo for top items.</div></div>';
+  else if(totalSlob>5e7) h+='<div class="insight-item"><span></span><div><strong>Watch:</strong> SLOB '+fmt(totalSlob)+' — monitor top 3 items for liquidation.</div></div>';
+  h+='<div class="insight-item"><span></span><div><strong style="color:var(--muted)">Logic:</strong> SLOB = zero neg-qty (consumption) from 1st of month 6M back → '+fmtPeriod(period)+' · Value = '+(isIbos?'ClosingStock × itm.numAverageRate (iBOS master)':'ClosingStock × DataMart AvgRate')+'.</div></div>';
+  return h;
+}
+function updateSlobInsights(SBU, period, P, periods){
+  var el=document.getElementById('slobInsights'); if(!el) return;
+  el.innerHTML=buildSlobInsightsHTML(SBU, period, P, periods, false);
+}
+function updateSlobIbosInsights(SBU, period, P, periods){
+  var el=document.getElementById('slobIbosInsights'); if(!el) return;
+  el.innerHTML=buildSlobInsightsHTML(SBU, period, P, periods, true);
 }
 
 // ===== KPIs =====
@@ -903,6 +949,7 @@ function renderSlobAAFL(type, zero, search, sort) {
   h += '</tbody></table>';
   h += '<p style="color:var(--muted);font-size:10px;margin-top:6px;">* AAFL closing value from <b>DataMart.inv.tblInventoryStatement</b> (ClosingStock × AvgRate), latest snapshot per item. SLOB = items with zero negative-quantity transactions from 1st of month 6 months back to as-of date (e.g. Mar 1 → Sep 13). Item Code from <b>itm.tblItemArc</b>.</p>';
   document.getElementById('slobTable').innerHTML = h;
+  try{ updateSlobInsights('AAFL', period, P, SLOB_AAFL.periods); }catch(e){}
 }
 
 function renderSlobFAL(type, zero, search, sort) {
@@ -934,6 +981,7 @@ function renderSlobFAL(type, zero, search, sort) {
   h += '</tbody></table>';
   h += '<p style="color:var(--muted);font-size:10px;margin-top:6px;">* FAL (Fariq Agro Ltd.) closing value from <b>DataMart.inv.tblInventoryStatement</b> (ClosingStock × AvgRate), latest snapshot per item/warehouse. SLOB = zero negative-quantity transactions from 1st of month 6 months back to as-of date. Other = engineering spares &amp; non-RM/PM. Item Code from <b>itm.tblItemArc</b>.</p>';
   document.getElementById('slobTable').innerHTML = h;
+  try{ updateSlobInsights('FAL', period, P, SLOB_FAL.periods); }catch(e){}
 }
 
 function renderSlobHRML(type, zero, search, sort) {
@@ -970,6 +1018,7 @@ function renderSlobHRML(type, zero, search, sort) {
   h += '</tbody></table>';
   h += '<p style="color:var(--muted);font-size:10px;margin-top:6px;">* HRML closing value from <b>DataMart.inv.tblInventoryStatement</b> (ClosingStock × AvgRate), latest snapshot per item. SLOB = items with zero negative-quantity transactions from 1st of month 6 months back to as-of date. Item Code from <b>itm.tblItemArc</b>.</p>';
   document.getElementById('slobTable').innerHTML = h;
+  try{ if(P) updateSlobInsights('HRML', period||Object.keys(SLOB_HRML.periods||{}).sort().reverse()[0], P, SLOB_HRML.periods||{[period]:P}); else updateSlobInsights('HRML', '6m', {values:V,counts:c,items:rows}, {'6m':{values:V,counts:c,items:rows}}); }catch(e){}
 }
 
 function setSlobKpis(l1,l2,l3,l4,v1,v2,v3,v4) {
@@ -1087,6 +1136,7 @@ function renderSlobIbosAAFL(type,zero,search,sort){
   if(idx===0)h+='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:14px;">No items match the current filter.</td></tr>';
   h+='</tbody></table>'; h+='<p style="color:var(--muted);font-size:10px;margin-top:6px;">* iBOS logic: closing value = <b>ClosingStock × itm.tblItemArc.numAverageRate</b> (master rate) instead of DataMart AvgRate. SLOB flag same: zero neg-qty from 1st of month 6M back to as-of. Example: Hessian Jute Bag 50kg 151,063 × 55.5 = 83,83,996 (iBOS) vs 151,063 × 30.53 = 46,12,103 (statement).</p>';
   document.getElementById('slobIbosTable').innerHTML=h;
+  try{ updateSlobIbosInsights('AAFL', period, P, SLOB_IBOS_AAFL.periods); }catch(e){}
 }
 function renderSlobIbosFAL(type,zero,search,sort){
   if(typeof SLOB_IBOS_FAL==='undefined'){document.getElementById('slobIbosTable').innerHTML='<p style="color:var(--muted);padding:20px;">slob_ibos_fal.js not loaded.</p>';return;}
@@ -1106,6 +1156,7 @@ function renderSlobIbosFAL(type,zero,search,sort){
   filtered.forEach(function(r){if(zero==='slob'&&!r.zeroCons)return;idx++;h+='<tr><td>'+idx+'</td><td style="font-size:10px;color:var(--muted)">'+esc(r.itemCode||'')+'</td><td title="'+esc(r.item)+'">'+esc(r.item.substring(0,60))+(r.item.length>60?'...':'')+'</td><td>'+r.type+'</td><td class="num">'+fmt(r.closingValue)+'</td><td class="num">'+(r.zeroCons?'No (SLOB)':(r.neg6||0)+' txns')+'</td><td>'+(r.zeroCons?'<span class="tag tag-rm">SLOB</span>':'<span class="tag tag-green">Active</span>')+'</td></tr>';});
   if(idx===0)h+='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:14px;">No items match the current filter.</td></tr>';
   h+='</tbody></table>'; document.getElementById('slobIbosTable').innerHTML=h;
+  try{ updateSlobIbosInsights('FAL', period, P, SLOB_IBOS_FAL.periods); }catch(e){}
 }
 function renderSlobIbosHRML(type,zero,search,sort){
   if(typeof SLOB_IBOS_HRML==='undefined'){document.getElementById('slobIbosTable').innerHTML='<p style="color:var(--muted);padding:20px;">slob_ibos_hrml.js not loaded.</p>';return;}
@@ -1126,6 +1177,7 @@ function renderSlobIbosHRML(type,zero,search,sort){
   filtered.forEach(function(r){if(zero==='slob'&&!r.zeroCons)return;idx++;h+='<tr><td>'+idx+'</td><td style="font-size:10px;color:var(--muted)">'+esc(r.itemCode||'')+'</td><td title="'+esc(r.item)+'">'+esc(r.item.substring(0,60))+(r.item.length>60?'...':'')+'</td><td>'+r.type+'</td><td class="num">'+fmt(r.closingValue)+'</td><td class="num">'+(r.zeroCons?'No (SLOB)':(r.neg6||0)+' txns')+'</td><td>'+(r.zeroCons?'<span class="tag tag-rm">SLOB</span>':'<span class="tag tag-green">Active</span>')+'</td></tr>';});
   if(idx===0)h+='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:14px;">No items match the current filter.</td></tr>';
   h+='</tbody></table>'; document.getElementById('slobIbosTable').innerHTML=h;
+  try{ if(P) updateSlobIbosInsights('HRML', period||Object.keys(SLOB_IBOS_HRML.periods||{}).sort().reverse()[0], P, SLOB_IBOS_HRML.periods||{[period]:P}); else updateSlobIbosInsights('HRML', '6m', {values:V,counts:c,items:rows}, {'6m':{values:V,counts:c,items:rows}}); }catch(e){}
 }
 function setSlobIbosKpis(v1,v2,v3,v4){ document.getElementById('slobIbosRmValue').textContent=v1; document.getElementById('slobIbosPmValue').textContent=v2; document.getElementById('slobIbosRmPct').textContent=v3; document.getElementById('slobIbosPmPct').textContent=v4; }
 function exportSlobIbosCSV(){
