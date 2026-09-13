@@ -263,6 +263,35 @@ canvas { max-height: 340px; }
   <div style="overflow-x:auto; max-height:600px; overflow-y:auto;" id="slobTable"></div>
 </div>
 
+<!-- SLOB Analysis (iBOS Logic) — ClosingStock × itm.numAverageRate -->
+<div class="card" style="margin-top:16px; border-top:3px solid #1e40af;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+    <h3 style="margin:0;">SLOB ANALYSIS (iBOS LOGIC) <span style="font-weight:400; color:var(--muted); font-size:11px; text-transform:none; letter-spacing:0;">— ClosingStock × itm.numAverageRate</span></h3>
+    <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+      <select id="slobIbosSbuFilter" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;box-shadow:var(--shadow);"><option value="AAFL">AAFL (Akij Agro Feed)</option><option value="HRML">HRML (Hashem Rice Mills)</option><option value="FAL">FAL (Fariq Agro Ltd.)</option></select>
+      <select id="slobIbosPeriodFilter" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;box-shadow:var(--shadow);"></select>
+      <select id="slobIbosTypeFilter" onchange="renderSlobIbos()" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;box-shadow:var(--shadow);"><option value="all">All Materials</option><option value="RM">Raw Material</option><option value="PM">Packaging Material</option><option value="Other">Other</option></select>
+      <select id="slobIbosZeroFilter" onchange="renderSlobIbos()" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;box-shadow:var(--shadow);"><option value="slob">SLOB Only (Zero Use)</option><option value="all">All Items</option></select>
+      <select id="slobIbosSortFilter" onchange="renderSlobIbos()" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;box-shadow:var(--shadow);"><option value="value_desc">Highest SLOB Value ↓</option><option value="value_asc">Lowest SLOB Value ↑</option><option value="alpha">Item Name A→Z</option></select>
+      <input type="text" id="slobIbosSearch" placeholder="Search item / code..." oninput="renderSlobIbos()" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;width:180px;box-shadow:var(--shadow);">
+      <button onclick="exportSlobIbosCSV()" style="background:#1e40af;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11px;cursor:pointer;font-weight:600;">Export CSV</button>
+    </div>
+  </div>
+  <p style="color:var(--muted);font-size:12px;margin-bottom:12px;">Same SLOB definition (<b>zero consumption from 1st of month 6 months back to today</b>), but <b>closing value = ClosingStock × <code>itm.tblItemArc.numAverageRate</code></b> (master rate, iBOS) instead of `DataMart AvgRate`. Use this to compare with the statement-based SLOB above. Example: <code>Hessian Jute Bag 50kg (1111341) 151,063 × 55.5 = 83,83,996 (iBOS) vs 151,063 × 30.53 = 46,12,103 (statement)</code>.</p>
+  <div class="grid cols-2" style="margin-bottom:12px;">
+    <div class="card" style="padding:14px;"><h3 style="font-size:12px;margin-bottom:10px;">RM SLOB vs Total (iBOS)</h3><canvas id="slobIbosPieRM" height="170"></canvas><div id="slobIbosPieRMCap" style="font-size:10px;color:var(--muted);margin-top:6px;line-height:1.4;"></div></div>
+    <div class="card" style="padding:14px;"><h3 style="font-size:12px;margin-bottom:10px;">PM SLOB vs Total (iBOS)</h3><canvas id="slobIbosPiePM" height="170"></canvas><div id="slobIbosPiePMCap" style="font-size:10px;color:var(--muted);margin-top:6px;line-height:1.4;"></div></div>
+  </div>
+  <div class="grid cols-4" style="margin-bottom:12px;" id="slobIbosKpiRow">
+    <div class="card kpi" style="padding:10px;"><div class="val" id="slobIbosRmValue" style="font-size:20px;">--</div><div class="lbl">RM SLOB Value</div></div>
+    <div class="card kpi" style="padding:10px;"><div class="val" id="slobIbosPmValue" style="font-size:20px;">--</div><div class="lbl">PM SLOB Value</div></div>
+    <div class="card kpi" style="padding:10px;"><div class="val" id="slobIbosRmPct" style="font-size:20px;">--</div><div class="lbl">RM SLOB % of Stock</div></div>
+    <div class="card kpi" style="padding:10px;"><div class="val" id="slobIbosPmPct" style="font-size:20px;">--</div><div class="lbl">PM SLOB % of Stock</div></div>
+  </div>
+  <div><span id="slobIbosRange" style="color:var(--muted);font-size:11px;"></span></div>
+  <div style="overflow-x:auto; max-height:600px; overflow-y:auto;" id="slobIbosTable"></div>
+</div>
+
 <script src="yoy_data.js"></script>
 <script src="items_data.js"></script>
 <script src="monthly_items.js"></script>
@@ -271,6 +300,9 @@ canvas { max-height: 340px; }
 <script src="slob_aafl.js"></script>
 <script src="slob_hrml.js"></script>
 <script src="slob_fal.js"></script>
+<script src="slob_ibos_aafl.js"></script>
+<script src="slob_ibos_fal.js"></script>
+<script src="slob_ibos_hrml.js"></script>
 <script>
 // ===== DATA =====
 const rawData = {
@@ -1008,6 +1040,109 @@ function exportSlobCSV() {
   a.click();URL.revokeObjectURL(url);
 }
 
+// ===== SLOB (iBOS Logic) — ClosingStock × itm.numAverageRate =====
+var SLOB_IBOS_SBUS = ['AAFL','HRML','FAL'];
+function initSlobIbos(){
+  var sbuSel=document.getElementById('slobIbosSbuFilter'); if(!sbuSel) return;
+  var labels={AAFL:'AAFL (Akij Agro Feed)',HRML:'HRML (Hashem Rice Mills)',FAL:'FAL (Fariq Agro Ltd.)'};
+  var existing={}; for(var i=0;i<sbuSel.options.length;i++) existing[sbuSel.options[i].value]=true;
+  if(SLOB_IBOS_SBUS.some(function(s){return !existing[s];})||sbuSel.options.length===0){ sbuSel.innerHTML=''; SLOB_IBOS_SBUS.forEach(function(s){var o=document.createElement('option');o.value=s;o.textContent=labels[s]||s;sbuSel.appendChild(o);});}
+  sbuSel.onchange=function(){populateSlobIbosPeriods(sbuSel.value); renderSlobIbos();};
+  populateSlobIbosPeriods(sbuSel.value); renderSlobIbos();
+}
+function populateSlobIbosPeriods(sbu){
+  var per=document.getElementById('slobIbosPeriodFilter'); if(!per) return; per.innerHTML=''; per.onchange=renderSlobIbos;
+  var map={AAFL:(typeof SLOB_IBOS_AAFL!=='undefined'?SLOB_IBOS_AAFL:null), HRML:(typeof SLOB_IBOS_HRML!=='undefined'?SLOB_IBOS_HRML:null), FAL:(typeof SLOB_IBOS_FAL!=='undefined'?SLOB_IBOS_FAL:null)};
+  var src=map[sbu];
+  if(src && src.periods){ Object.keys(src.periods).sort().reverse().forEach(function(p){ var o=document.createElement('option');o.value=p;o.textContent=fmtPeriod(p);per.appendChild(o);});}
+  else { var o=document.createElement('option');o.value='6m';o.textContent='6-mo';per.appendChild(o);}
+}
+function slobIbosSortValue(){ var e=document.getElementById('slobIbosSortFilter'); return e?e.value:'value_desc'; }
+function renderSlobIbos(){
+  var sbu=document.getElementById('slobIbosSbuFilter').value;
+  var type=document.getElementById('slobIbosTypeFilter').value;
+  var zero=document.getElementById('slobIbosZeroFilter').value;
+  var search=document.getElementById('slobIbosSearch').value.toLowerCase();
+  var sort=slobIbosSortValue();
+  if(sbu==='AAFL') return renderSlobIbosAAFL(type,zero,search,sort);
+  if(sbu==='HRML') return renderSlobIbosHRML(type,zero,search,sort);
+  if(sbu==='FAL') return renderSlobIbosFAL(type,zero,search,sort);
+}
+function renderSlobIbosAAFL(type,zero,search,sort){
+  if(typeof SLOB_IBOS_AAFL==='undefined'){document.getElementById('slobIbosTable').innerHTML='<p style="color:var(--muted);padding:20px;">slob_ibos_aafl.js not loaded. Run fetch_slob_ibos_aafl.js on office network.</p>';return;}
+  var period=(document.getElementById('slobIbosPeriodFilter')?document.getElementById('slobIbosPeriodFilter').value:'2026-09')||'2026-09';
+  var P=SLOB_IBOS_AAFL.periods[period]||SLOB_IBOS_AAFL.periods[Object.keys(SLOB_IBOS_AAFL.periods).sort().reverse()[0]];
+  var V=P.values,c=P.counts;
+  var rmTot=V.RM.total*1e7,rmSlob=V.RM.slob*1e7,pmTot=V.PM.total*1e7,pmSlob=V.PM.slob*1e7;
+  var rmActive=rmTot-rmSlob,pmActive=pmTot-pmSlob; var rmActCnt=c.rmItems-c.rmSlob,pmActCnt=c.pmItems-c.pmSlob;
+  setSlobIbosKpis(fmt(rmSlob),fmt(pmSlob),(rmTot>0?(rmSlob/rmTot*100).toFixed(2):'0.00')+'%',(pmTot>0?(pmSlob/pmTot*100).toFixed(2):'0.00')+'%');
+  drawSlobPie('slobIbosPieRM',rmSlob,rmActive,'RM SLOB ('+fmt(rmSlob)+' | '+c.rmSlob+' items)','RM Active ('+fmt(rmActive)+' | '+rmActCnt+' items)');
+  drawSlobPie('slobIbosPiePM',pmSlob,pmActive,'PM SLOB ('+fmt(pmSlob)+' | '+c.pmSlob+' items)','PM Active ('+fmt(pmActive)+' | '+pmActCnt+' items)');
+  document.getElementById('slobIbosPieRMCap').innerHTML='RM Total: <b>'+V.RM.total.toFixed(2)+' Cr</b> / '+c.rmItems+' items &nbsp;|&nbsp; RM SLOB: <b>'+V.RM.slob.toFixed(2)+' Cr</b> / '+c.rmSlob+' items ('+V.RM.pct+'%)';
+  document.getElementById('slobIbosPiePMCap').innerHTML='PM Total: <b>'+V.PM.total.toFixed(2)+' Cr</b> / '+c.pmItems+' items &nbsp;|&nbsp; PM SLOB: <b>'+V.PM.slob.toFixed(2)+' Cr</b> / '+c.pmSlob+' items ('+V.PM.pct+'%)';
+  var rows=P.items; var filtered=rows.filter(function(r){if(type!=='all'&&r.type!==type)return false;if(zero==='slob'&&!r.zeroCons)return false;if(search&&!r.item.toLowerCase().includes(search)&&!(r.itemCode||'').toLowerCase().includes(search))return false;return true;}); applySlobSort(filtered,sort||slobIbosSortValue());
+  document.getElementById('slobIbosRange').textContent='AAFL (iBOS) | '+fmtPeriod(period)+' | RM SLOB '+V.RM.slob.toFixed(2)+' Cr ('+c.rmSlob+' items) | PM SLOB '+V.PM.slob.toFixed(2)+' Cr ('+c.pmSlob+' items) | Total Inv '+V.totalInv.toFixed(2)+' Cr';
+  var h='<table class="tbl"><thead><tr><th>#</th><th>Item Code</th><th>Item</th><th>Type</th><th class="num">Closing Value (iBOS)</th><th class="num">6-mo Consumed?</th><th>Flag</th></tr></thead><tbody>'; var idx=0;
+  filtered.forEach(function(r){if(zero==='slob'&&!r.zeroCons)return;idx++;h+='<tr><td>'+idx+'</td><td style="font-size:10px;color:var(--muted)">'+esc(r.itemCode||'')+'</td><td title="'+esc(r.item)+'">'+esc(r.item.substring(0,60))+(r.item.length>60?'...':'')+'</td><td>'+r.type+'</td><td class="num">'+fmt(r.closingValue)+'</td><td class="num">'+(r.zeroCons?'No (SLOB)':(r.neg6||0)+' txns')+'</td><td>'+(r.zeroCons?'<span class="tag tag-rm">SLOB</span>':'<span class="tag tag-green">Active</span>')+'</td></tr>';});
+  if(idx===0)h+='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:14px;">No items match the current filter.</td></tr>';
+  h+='</tbody></table>'; h+='<p style="color:var(--muted);font-size:10px;margin-top:6px;">* iBOS logic: closing value = <b>ClosingStock × itm.tblItemArc.numAverageRate</b> (master rate) instead of DataMart AvgRate. SLOB flag same: zero neg-qty from 1st of month 6M back to as-of. Example: Hessian Jute Bag 50kg 151,063 × 55.5 = 83,83,996 (iBOS) vs 151,063 × 30.53 = 46,12,103 (statement).</p>';
+  document.getElementById('slobIbosTable').innerHTML=h;
+}
+function renderSlobIbosFAL(type,zero,search,sort){
+  if(typeof SLOB_IBOS_FAL==='undefined'){document.getElementById('slobIbosTable').innerHTML='<p style="color:var(--muted);padding:20px;">slob_ibos_fal.js not loaded.</p>';return;}
+  var period=(document.getElementById('slobIbosPeriodFilter')?document.getElementById('slobIbosPeriodFilter').value:'2026-09')||'2026-09';
+  var P=SLOB_IBOS_FAL.periods[period]||SLOB_IBOS_FAL.periods[Object.keys(SLOB_IBOS_FAL.periods).sort().reverse()[0]];
+  var V=P.values,c=P.counts;
+  var rmTot=V.RM.total*1e7,rmSlob=V.RM.slob*1e7,pmTot=V.PM.total*1e7,pmSlob=V.PM.slob*1e7;
+  var rmActive=rmTot-rmSlob,pmActive=pmTot-pmSlob; var rmActCnt=c.rmItems-c.rmSlob,pmActCnt=c.pmItems-c.pmSlob;
+  setSlobIbosKpis(fmt(rmSlob),fmt(pmSlob),(rmTot>0?(rmSlob/rmTot*100).toFixed(2):'0.00')+'%',(pmTot>0?(pmSlob/pmTot*100).toFixed(2):'0.00')+'%');
+  drawSlobPie('slobIbosPieRM',rmSlob,rmActive,'RM SLOB ('+fmt(rmSlob)+' | '+c.rmSlob+' items)','RM Active ('+fmt(rmActive)+' | '+rmActCnt+' items)');
+  drawSlobPie('slobIbosPiePM',pmSlob,pmActive,'PM SLOB ('+fmt(pmSlob)+' | '+c.pmSlob+' items)','PM Active ('+fmt(pmActive)+' | '+pmActCnt+' items)');
+  document.getElementById('slobIbosPieRMCap').innerHTML='RM Total: <b>'+V.RM.total.toFixed(2)+' Cr</b> / '+c.rmItems+' items &nbsp;|&nbsp; RM SLOB: <b>'+V.RM.slob.toFixed(2)+' Cr</b> / '+c.rmSlob+' items ('+V.RM.pct+'%)';
+  document.getElementById('slobIbosPiePMCap').innerHTML='PM Total: <b>'+V.PM.total.toFixed(2)+' Cr</b> / '+c.pmItems+' items &nbsp;|&nbsp; PM SLOB: <b>'+V.PM.slob.toFixed(2)+' Cr</b> / '+c.pmSlob+' items ('+V.PM.pct+'%)';
+  var rows=P.items; var filtered=rows.filter(function(r){if(type!=='all'&&r.type!==type)return false;if(zero==='slob'&&!r.zeroCons)return false;if(search&&!r.item.toLowerCase().includes(search)&&!(r.itemCode||'').toLowerCase().includes(search))return false;return true;}); applySlobSort(filtered,sort||slobIbosSortValue());
+  document.getElementById('slobIbosRange').textContent='FAL (iBOS) | '+fmtPeriod(period)+' | RM SLOB '+V.RM.slob.toFixed(2)+' Cr ('+c.rmSlob+' items) | PM SLOB '+V.PM.slob.toFixed(2)+' Cr ('+c.pmSlob+' items) | Other SLOB '+V.Other.slob.toFixed(2)+' Cr | Total Inv '+V.totalInv.toFixed(2)+' Cr';
+  var h='<table class="tbl"><thead><tr><th>#</th><th>Item Code</th><th>Item</th><th>Type</th><th class="num">Closing Value (iBOS)</th><th class="num">6-mo Consumed?</th><th>Flag</th></tr></thead><tbody>'; var idx=0;
+  filtered.forEach(function(r){if(zero==='slob'&&!r.zeroCons)return;idx++;h+='<tr><td>'+idx+'</td><td style="font-size:10px;color:var(--muted)">'+esc(r.itemCode||'')+'</td><td title="'+esc(r.item)+'">'+esc(r.item.substring(0,60))+(r.item.length>60?'...':'')+'</td><td>'+r.type+'</td><td class="num">'+fmt(r.closingValue)+'</td><td class="num">'+(r.zeroCons?'No (SLOB)':(r.neg6||0)+' txns')+'</td><td>'+(r.zeroCons?'<span class="tag tag-rm">SLOB</span>':'<span class="tag tag-green">Active</span>')+'</td></tr>';});
+  if(idx===0)h+='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:14px;">No items match the current filter.</td></tr>';
+  h+='</tbody></table>'; document.getElementById('slobIbosTable').innerHTML=h;
+}
+function renderSlobIbosHRML(type,zero,search,sort){
+  if(typeof SLOB_IBOS_HRML==='undefined'){document.getElementById('slobIbosTable').innerHTML='<p style="color:var(--muted);padding:20px;">slob_ibos_hrml.js not loaded.</p>';return;}
+  var period=(document.getElementById('slobIbosPeriodFilter')?document.getElementById('slobIbosPeriodFilter').value:'')||'';
+  var P=null,V,c,rows;
+  if(SLOB_IBOS_HRML.periods){ P=SLOB_IBOS_HRML.periods[period]||SLOB_IBOS_HRML.periods[Object.keys(SLOB_IBOS_HRML.periods).sort().reverse()[0]]; V=P.values; c=P.counts; rows=P.items; } else { V=SLOB_IBOS_HRML.values; c=SLOB_IBOS_HRML.counts; rows=SLOB_IBOS_HRML.items; }
+  var rmTot=V.RM.total*1e7,rmSlob=V.RM.slob*1e7,pmTot=V.PM.total*1e7,pmSlob=V.PM.slob*1e7;
+  var rmActCnt=c.rmItems-c.rmSlob,pmActCnt=c.pmItems-c.pmSlob;
+  setSlobIbosKpis(fmt(rmSlob),fmt(pmSlob),(rmTot>0?(rmSlob/rmTot*100).toFixed(2):'0.00')+'%',(pmTot>0?(pmSlob/pmTot*100).toFixed(2):'0.00')+'%');
+  drawSlobPie('slobIbosPieRM',rmSlob,rmTot-rmSlob,'RM SLOB ('+fmt(rmSlob)+' | '+c.rmSlob+' items)','RM Active ('+fmt(rmTot-rmSlob)+' | '+rmActCnt+' items)');
+  drawSlobPie('slobIbosPiePM',pmSlob,pmTot-pmSlob,'PM SLOB ('+fmt(pmSlob)+' | '+c.pmSlob+' items)','PM Active ('+fmt(pmTot-pmSlob)+' | '+pmActCnt+' items)');
+  document.getElementById('slobIbosPieRMCap').innerHTML='RM Total: <b>'+V.RM.total.toFixed(2)+' Cr</b> / '+c.rmItems+' items &nbsp;|&nbsp; RM SLOB: <b>'+V.RM.slob.toFixed(2)+' Cr</b> / '+c.rmSlob+' items ('+V.RM.pct+'%)';
+  document.getElementById('slobIbosPiePMCap').innerHTML='PM Total: <b>'+V.PM.total.toFixed(2)+' Cr</b> / '+c.pmItems+' items &nbsp;|&nbsp; PM SLOB: <b>'+V.PM.slob.toFixed(2)+' Cr</b> / '+c.pmSlob+' items ('+V.PM.pct+'%)';
+  var filtered=rows.filter(function(r){if(type!=='all'&&r.type!==type)return false;if(zero==='slob'&&!r.zeroCons)return false;if(search&&!r.item.toLowerCase().includes(search)&&!(r.itemCode||'').toLowerCase().includes(search))return false;return true;}); applySlobSort(filtered,sort||slobIbosSortValue());
+  if(P) document.getElementById('slobIbosRange').textContent='HRML (iBOS) | '+fmtPeriod(period||Object.keys(SLOB_IBOS_HRML.periods).sort().reverse()[0])+' | RM SLOB '+V.RM.slob.toFixed(2)+' Cr | PM SLOB '+V.PM.slob.toFixed(2)+' Cr | Total Inv '+V.totalInv.toFixed(2)+' Cr';
+  else document.getElementById('slobIbosRange').textContent='HRML (iBOS) | '+SLOB_IBOS_HRML.window+' | RM SLOB '+V.RM.slob.toFixed(2)+' Cr | PM SLOB '+V.PM.slob.toFixed(2)+' Cr | Total Inv '+V.totalInv.toFixed(2)+' Cr';
+  var h='<table class="tbl"><thead><tr><th>#</th><th>Item Code</th><th>Item</th><th>Type</th><th class="num">Closing Value (iBOS)</th><th class="num">6-mo Consumed?</th><th>Flag</th></tr></thead><tbody>'; var idx=0;
+  filtered.forEach(function(r){if(zero==='slob'&&!r.zeroCons)return;idx++;h+='<tr><td>'+idx+'</td><td style="font-size:10px;color:var(--muted)">'+esc(r.itemCode||'')+'</td><td title="'+esc(r.item)+'">'+esc(r.item.substring(0,60))+(r.item.length>60?'...':'')+'</td><td>'+r.type+'</td><td class="num">'+fmt(r.closingValue)+'</td><td class="num">'+(r.zeroCons?'No (SLOB)':(r.neg6||0)+' txns')+'</td><td>'+(r.zeroCons?'<span class="tag tag-rm">SLOB</span>':'<span class="tag tag-green">Active</span>')+'</td></tr>';});
+  if(idx===0)h+='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:14px;">No items match the current filter.</td></tr>';
+  h+='</tbody></table>'; document.getElementById('slobIbosTable').innerHTML=h;
+}
+function setSlobIbosKpis(v1,v2,v3,v4){ document.getElementById('slobIbosRmValue').textContent=v1; document.getElementById('slobIbosPmValue').textContent=v2; document.getElementById('slobIbosRmPct').textContent=v3; document.getElementById('slobIbosPmPct').textContent=v4; }
+function exportSlobIbosCSV(){
+  var sbu=document.getElementById('slobIbosSbuFilter').value;
+  var type=document.getElementById('slobIbosTypeFilter').value;
+  var zero=document.getElementById('slobIbosZeroFilter').value;
+  var search=document.getElementById('slobIbosSearch').value.toLowerCase();
+  var period=(document.getElementById('slobIbosPeriodFilter')?document.getElementById('slobIbosPeriodFilter').value:'')||'';
+  var sort=slobIbosSortValue();
+  var rows; function filterRows(items){return items.filter(function(r){if(type!=='all'&&r.type!==type)return false;if(zero==='slob'&&!r.zeroCons)return false;if(search&&!r.item.toLowerCase().includes(search)&&!(r.itemCode||'').toLowerCase().includes(search))return false;return true;});}
+  if(sbu==='FAL'&&typeof SLOB_IBOS_FAL!=='undefined'){ var per=period||Object.keys(SLOB_IBOS_FAL.periods).sort().reverse()[0]; var frows=filterRows((SLOB_IBOS_FAL.periods[per]||SLOB_IBOS_FAL.periods[Object.keys(SLOB_IBOS_FAL.periods)[0]]).items); applySlobSort(frows,sort); rows=[['SBU','Item Code','Item','Type','Closing Value (iBOS)','6-mo NegQty','SLOB','Period']]; frows.forEach(function(r){rows.push(['FAL',r.itemCode||'','"'+r.item.replace(/"/g,'""')+'"',r.type,r.closingValue,r.neg6,r.zeroCons?'SLOB':'',per]);});}
+  else if(sbu==='AAFL'&&typeof SLOB_IBOS_AAFL!=='undefined'){ var per2=period||Object.keys(SLOB_IBOS_AAFL.periods).sort().reverse()[0]; var arows=filterRows((SLOB_IBOS_AAFL.periods[per2]||SLOB_IBOS_AAFL.periods[Object.keys(SLOB_IBOS_AAFL.periods)[0]]).items); applySlobSort(arows,sort); rows=[['SBU','Item Code','Item','Type','Closing Value (iBOS)','6-mo NegQty','SLOB','Period']]; arows.forEach(function(r){rows.push(['AAFL',r.itemCode||'','"'+r.item.replace(/"/g,'""')+'"',r.type,r.closingValue,r.neg6,r.zeroCons?'SLOB':'',per2]);});}
+  else if(sbu==='HRML'&&typeof SLOB_IBOS_HRML!=='undefined'){ var hrows; if(SLOB_IBOS_HRML.periods){ var per3=period||Object.keys(SLOB_IBOS_HRML.periods).sort().reverse()[0]; hrows=filterRows((SLOB_IBOS_HRML.periods[per3]||SLOB_IBOS_HRML.periods[Object.keys(SLOB_IBOS_HRML.periods)[0]]).items); applySlobSort(hrows,sort); rows=[['SBU','Item Code','Item','Type','Closing Value (iBOS)','6-mo NegQty','SLOB','Period']]; hrows.forEach(function(r){rows.push(['HRML',r.itemCode||'','"'+r.item.replace(/"/g,'""')+'"',r.type,r.closingValue,r.neg6,r.zeroCons?'SLOB':'',per3]);});} else { hrows=filterRows(SLOB_IBOS_HRML.items); applySlobSort(hrows,sort); rows=[['SBU','Item Code','Item','Type','Closing Value (iBOS)','6-mo NegQty','SLOB']]; hrows.forEach(function(r){rows.push(['HRML',r.itemCode||'','"'+r.item.replace(/"/g,'""')+'"',r.type,r.closingValue,r.neg6,r.zeroCons?'SLOB':'']);});}}
+  else return;
+  var csv=rows.map(function(r){return r.join(',');}).join('\n'); var blob=new Blob([csv],{type:'text/csv'}); var url=URL.createObjectURL(blob); var a=document.createElement('a');a.href=url;a.download='slob_ibos_'+sbu+'_'+new Date().toISOString().split('T')[0]+'.csv';a.click();URL.revokeObjectURL(url);
+}
+
 // SBU code->name map used by SLOB filters
 var SBU_NAMES2 = { ACCL:'ACCL Akij Cement', AIL:'AIL Akij Ispat', AEL:'AEL Akij Essential', APFIL:'APFIL Akij Poly Fibre', ARMCL:'ARMCL', ABSL:'ABSL Akij Building Solutions', HRML:'HRML Hashem Rice', FAL:'FAL Fariq Agro', AAFL:'AAFL Akij Agro Feed', ALEL:'ALEL Akij Light Engineering' };
 
@@ -1034,6 +1169,7 @@ function init() {
   initItems();
   initYoY();
   initSlob();
+  initSlobIbos();
   // keep subtitle date evergreen (July 2024 – today) so auto-refreshes always show current date
   var subEl = document.getElementById('subtitleRange');
   if (subEl) { var dd=new Date(); var mms=["January","February","March","April","May","June","July","August","September","October","November","December"]; subEl.textContent = "Raw Material & Packaging Material | 10 SBUs | July 2024 – " + mms[dd.getMonth()] + " " + dd.getDate() + ", " + dd.getFullYear(); }
