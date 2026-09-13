@@ -14,7 +14,7 @@ async function getItemCodeMap(pool){
 async function period(pool, asOf, key, codeMap){
   const base = `FROM DataMart.inv.tblInventoryStatement WHERE [Business Unit] LIKE '${BUNAME}' AND dteTransactionDate <= '${asOf}'`;
   const q1 = `WITH b AS (SELECT *, ROW_NUMBER() OVER (PARTITION BY [Business Unit], strItemName, Warehouse ORDER BY dteTransactionDate DESC) AS rn ${base}), latest AS (SELECT * FROM b WHERE rn=1) SELECT strItemName, SUM(ClosingStock*AvgRate) AS closingVal FROM latest GROUP BY strItemName`;
-  const q2 = `SELECT strItemName, SUM(CASE WHEN IssueOrreceivedQty < 0 THEN 1 ELSE 0 END) AS neg6 FROM DataMart.inv.tblInventoryStatement WHERE [Business Unit] LIKE '${BUNAME}' AND dteTransactionDate >= DATEADD(month,-6,'${asOf}') AND dteTransactionDate <= '${asOf}' GROUP BY strItemName`;
+  const q2 = `SELECT strItemName, SUM(CASE WHEN IssueOrreceivedQty < 0 THEN 1 ELSE 0 END) AS neg6 FROM DataMart.inv.tblInventoryStatement WHERE [Business Unit] LIKE '${BUNAME}' AND dteTransactionDate >= CAST(DATEADD(month, DATEDIFF(month, 0, '${asOf}') - 6, 0) AS DATE) AND dteTransactionDate <= '${asOf}' GROUP BY strItemName`;
   const v = await pool.request().query(q1);
   const c = await pool.request().query(q2);
   const vals={}, cons={};

@@ -245,7 +245,7 @@ canvas { max-height: 340px; }
     </div>
   </div>
 
-  <p style="color:var(--muted);font-size:12px;margin-bottom:12px;">A material is <b>SLOB</b> when it had <b>zero consumption (negative quantity) in the trailing 6 months</b>; <b>SLOB value = sum of closing values</b> of those items. All three SBUs now source value from <b>DataMart.inv.tblInventoryStatement</b> (ClosingStock × AvgRate, latest per item/warehouse). RM/PM split is keyword-based and may need finance mapping refinement. Use the SBU selector to switch between AAFL, HRML and FAL.</p>
+  <p style="color:var(--muted);font-size:12px;margin-bottom:12px;">A material is <b>SLOB</b> when it had <b>zero consumption (negative quantity) from the 1st day of the month 6 months back until today</b> (e.g. Mar 1 → Sep 13); <b>SLOB value = sum of closing values</b> of those items. All three SBUs source value from <b>DataMart.inv.tblInventoryStatement</b> (ClosingStock × AvgRate, latest per item/warehouse). RM/PM split is keyword-based.</p>
 
   <div class="grid cols-2" style="margin-bottom:12px;">
     <div class="card" style="padding:14px;"><h3 style="font-size:12px;margin-bottom:10px;">RM SLOB vs Total</h3><canvas id="slobPieRM" height="170"></canvas><div id="slobPieRMCap" style="font-size:10px;color:var(--muted);margin-top:6px;line-height:1.4;"></div></div>
@@ -869,7 +869,7 @@ function renderSlobAAFL(type, zero, search, sort) {
   filtered.forEach(function(r){ if(zero==='slob'&&!r.zeroCons)return; idx++; h += '<tr><td>'+idx+'</td><td style="font-size:10px;color:var(--muted)">'+esc(r.itemCode||'')+'</td><td title="'+esc(r.item)+'">'+esc(r.item.substring(0,60))+(r.item.length>60?'...':'')+'</td><td>'+r.type+'</td><td class="num">'+fmt(r.closingValue)+'</td><td class="num">'+(r.zeroCons?'No (SLOB)':(r.neg6||0)+' txns')+'</td><td>'+(r.zeroCons?'<span class="tag tag-rm">SLOB</span>':'<span class="tag tag-green">Active</span>')+'</td></tr>'; });
   if (idx===0) h += '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:14px;">No items match the current filter.</td></tr>';
   h += '</tbody></table>';
-  h += '<p style="color:var(--muted);font-size:10px;margin-top:6px;">* AAFL closing value from <b>DataMart.inv.tblInventoryStatement</b> (ClosingStock × AvgRate), latest snapshot per item. SLOB = items with zero negative-quantity transactions in the 6-month window. RM/PM classification is keyword-based. Item Code from <b>itm.tblItemArc</b> (latest active mapping).</p>';
+  h += '<p style="color:var(--muted);font-size:10px;margin-top:6px;">* AAFL closing value from <b>DataMart.inv.tblInventoryStatement</b> (ClosingStock × AvgRate), latest snapshot per item. SLOB = items with zero negative-quantity transactions from 1st of month 6 months back to as-of date (e.g. Mar 1 → Sep 13). Item Code from <b>itm.tblItemArc</b>.</p>';
   document.getElementById('slobTable').innerHTML = h;
 }
 
@@ -900,7 +900,7 @@ function renderSlobFAL(type, zero, search, sort) {
   filtered.forEach(function(r){ if(zero==='slob'&&!r.zeroCons)return; idx++; h += '<tr><td>'+idx+'</td><td style="font-size:10px;color:var(--muted)">'+esc(r.itemCode||'')+'</td><td title="'+esc(r.item)+'">'+esc(r.item.substring(0,60))+(r.item.length>60?'...':'')+'</td><td>'+r.type+'</td><td class="num">'+fmt(r.closingValue)+'</td><td class="num">'+(r.zeroCons?'No (SLOB)':(r.neg6||0)+' txns')+'</td><td>'+(r.zeroCons?'<span class="tag tag-rm">SLOB</span>':'<span class="tag tag-green">Active</span>')+'</td></tr>'; });
   if (idx===0) h += '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:14px;">No items match the current filter.</td></tr>';
   h += '</tbody></table>';
-  h += '<p style="color:var(--muted);font-size:10px;margin-top:6px;">* FAL (Fariq Agro Ltd.) closing value from <b>DataMart.inv.tblInventoryStatement</b> (ClosingStock × AvgRate), latest snapshot per item/warehouse. SLOB = zero negative-quantity transactions in the trailing 6 months. Other = engineering spares &amp; non-RM/PM. Item Code from <b>itm.tblItemArc</b>.</p>';
+  h += '<p style="color:var(--muted);font-size:10px;margin-top:6px;">* FAL (Fariq Agro Ltd.) closing value from <b>DataMart.inv.tblInventoryStatement</b> (ClosingStock × AvgRate), latest snapshot per item/warehouse. SLOB = zero negative-quantity transactions from 1st of month 6 months back to as-of date. Other = engineering spares &amp; non-RM/PM. Item Code from <b>itm.tblItemArc</b>.</p>';
   document.getElementById('slobTable').innerHTML = h;
 }
 
@@ -936,7 +936,7 @@ function renderSlobHRML(type, zero, search, sort) {
   filtered.forEach(function(r){ if(zero==='slob'&&!r.zeroCons)return; idx++; h += '<tr><td>'+idx+'</td><td style="font-size:10px;color:var(--muted)">'+esc(r.itemCode||'')+'</td><td title="'+esc(r.item)+'">'+esc(r.item.substring(0,60))+(r.item.length>60?'...':'')+'</td><td>'+r.type+'</td><td class="num">'+fmt(r.closingValue)+'</td><td class="num">'+(r.zeroCons?'No (SLOB)':(r.neg6||0)+' txns')+'</td><td>'+(r.zeroCons?'<span class="tag tag-rm">SLOB</span>':'<span class="tag tag-green">Active</span>')+'</td></tr>'; });
   if (idx===0) h += '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:14px;">No items match the current filter.</td></tr>';
   h += '</tbody></table>';
-  h += '<p style="color:var(--muted);font-size:10px;margin-top:6px;">* HRML closing value from <b>DataMart.inv.tblInventoryStatement</b> (ClosingStock × AvgRate), latest snapshot per item. SLOB = items with zero negative-quantity transactions in the 6-month window. RM/PM classification is keyword-based and may need finance mapping refinement. Item Code from <b>itm.tblItemArc</b>.</p>';
+  h += '<p style="color:var(--muted);font-size:10px;margin-top:6px;">* HRML closing value from <b>DataMart.inv.tblInventoryStatement</b> (ClosingStock × AvgRate), latest snapshot per item. SLOB = items with zero negative-quantity transactions from 1st of month 6 months back to as-of date. Item Code from <b>itm.tblItemArc</b>.</p>';
   document.getElementById('slobTable').innerHTML = h;
 }
 
