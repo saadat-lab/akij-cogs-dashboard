@@ -805,6 +805,7 @@ function initSlob() {
   renderSlob();
 }
 
+function fmtPeriod(p){ var parts=p.split('-'); var mms=["","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]; return p.indexOf('-')>0 ? mms[+parts[1]]+" "+parts[0] : p; }
 function populateSlobPeriods(sbu) {
   var per = document.getElementById('slobPeriodFilter');
   if (!per) return;
@@ -812,14 +813,12 @@ function populateSlobPeriods(sbu) {
   per.onchange = renderSlob;
   var map={AAFL: (typeof SLOB_AAFL!=='undefined'?SLOB_AAFL:null), HRML: (typeof SLOB_HRML!=='undefined'?SLOB_HRML:null), FAL: (typeof SLOB_FAL!=='undefined'?SLOB_FAL:null)};
   var src=map[sbu];
-  if (sbu==='AAFL' && src) {
-    Object.keys(src.periods).sort().reverse().forEach(function(p){ var o=document.createElement('option'); o.value=p; o.textContent=(p==='2026-08'?'Aug 2026':(p==='2026-07'?'Jul 2026':p)); per.appendChild(o); });
-  } else if (sbu==='FAL' && src) {
-    Object.keys(src.periods).sort().reverse().forEach(function(p){ var o=document.createElement('option'); o.value=p; o.textContent=(p==='2026-08'?'Aug 2026':(p==='2026-07'?'Jul 2026':p)); per.appendChild(o); });
+  if (src && src.periods) {
+    Object.keys(src.periods).sort().reverse().forEach(function(p){ var o=document.createElement('option'); o.value=p; o.textContent=fmtPeriod(p); per.appendChild(o); });
   } else if (sbu === 'HRML') {
-    // HRML currently has flat values (single window) OR periodised if upgraded; handle both
+    // legacy flat HRML
     if (src && src.periods) {
-      Object.keys(src.periods).sort().reverse().forEach(function(p){ var o=document.createElement('option'); o.value=p; o.textContent=(p==='2026-08'?'Aug 2026':(p==='2026-07'?'Jul 2026':p)); per.appendChild(o); });
+      Object.keys(src.periods).sort().reverse().forEach(function(p){ var o=document.createElement('option'); o.value=p; o.textContent=fmtPeriod(p); per.appendChild(o); });
     } else {
       var o=document.createElement('option'); o.value='6m'; o.textContent='6-mo (Mar–Aug 26)'; per.appendChild(o);
     }
@@ -864,7 +863,7 @@ function renderSlobAAFL(type, zero, search, sort) {
   var rows = P.items;
   var filtered = rows.filter(function(r){ if(type!=='all'&&r.type!==type)return false; if(zero==='slob'&&!r.zeroCons)return false; if(search&&!r.item.toLowerCase().includes(search)&&!(r.itemCode||'').toLowerCase().includes(search))return false; return true; });
   applySlobSort(filtered, sort || slobSortValue());
-  document.getElementById('slobRange').textContent = 'AAFL | '+(period==='2026-08'?'Aug 2026':'Jul 2026')+' (DataMart.inv.tblInventoryStatement) | RM SLOB '+V.RM.slob.toFixed(2)+' Cr ('+c.rmSlob+' items) | PM SLOB '+V.PM.slob.toFixed(2)+' Cr ('+c.pmSlob+' items) | Total Inv '+V.totalInv.toFixed(2)+' Cr';
+  document.getElementById('slobRange').textContent = 'AAFL | '+fmtPeriod(period)+' (DataMart.inv.tblInventoryStatement) | RM SLOB '+V.RM.slob.toFixed(2)+' Cr ('+c.rmSlob+' items) | PM SLOB '+V.PM.slob.toFixed(2)+' Cr ('+c.pmSlob+' items) | Total Inv '+V.totalInv.toFixed(2)+' Cr';
   var h = '<table class="tbl"><thead><tr><th>#</th><th>Item Code</th><th>Item</th><th>Type</th><th class="num">Closing Value</th><th class="num">6-mo Consumed? (neg qty)</th><th>Flag</th></tr></thead><tbody>';
   var idx=0;
   filtered.forEach(function(r){ if(zero==='slob'&&!r.zeroCons)return; idx++; h += '<tr><td>'+idx+'</td><td style="font-size:10px;color:var(--muted)">'+esc(r.itemCode||'')+'</td><td title="'+esc(r.item)+'">'+esc(r.item.substring(0,60))+(r.item.length>60?'...':'')+'</td><td>'+r.type+'</td><td class="num">'+fmt(r.closingValue)+'</td><td class="num">'+(r.zeroCons?'No (SLOB)':(r.neg6||0)+' txns')+'</td><td>'+(r.zeroCons?'<span class="tag tag-rm">SLOB</span>':'<span class="tag tag-green">Active</span>')+'</td></tr>'; });
@@ -895,7 +894,7 @@ function renderSlobFAL(type, zero, search, sort) {
   var rows = P.items;
   var filtered = rows.filter(function(r){ if(type!=='all'&&r.type!==type)return false; if(zero==='slob'&&!r.zeroCons)return false; if(search&&!r.item.toLowerCase().includes(search)&&!(r.itemCode||'').toLowerCase().includes(search))return false; return true; });
   applySlobSort(filtered, sort || slobSortValue());
-  document.getElementById('slobRange').textContent = 'FAL | '+(period==='2026-08'?'Aug 2026':'Jul 2026')+' (DataMart.inv.tblInventoryStatement) | RM SLOB '+V.RM.slob.toFixed(2)+' Cr ('+c.rmSlob+' items) | PM SLOB '+V.PM.slob.toFixed(2)+' Cr ('+c.pmSlob+' items) | Other SLOB '+V.Other.slob.toFixed(2)+' Cr | Total Inv '+V.totalInv.toFixed(2)+' Cr';
+  document.getElementById('slobRange').textContent = 'FAL | '+fmtPeriod(period)+' (DataMart.inv.tblInventoryStatement) | RM SLOB '+V.RM.slob.toFixed(2)+' Cr ('+c.rmSlob+' items) | PM SLOB '+V.PM.slob.toFixed(2)+' Cr ('+c.pmSlob+' items) | Other SLOB '+V.Other.slob.toFixed(2)+' Cr | Total Inv '+V.totalInv.toFixed(2)+' Cr';
   var h = '<table class="tbl"><thead><tr><th>#</th><th>Item Code</th><th>Item</th><th>Type</th><th class="num">Closing Value</th><th class="num">6-mo Consumed? (neg qty)</th><th>Flag</th></tr></thead><tbody>';
   var idx=0;
   filtered.forEach(function(r){ if(zero==='slob'&&!r.zeroCons)return; idx++; h += '<tr><td>'+idx+'</td><td style="font-size:10px;color:var(--muted)">'+esc(r.itemCode||'')+'</td><td title="'+esc(r.item)+'">'+esc(r.item.substring(0,60))+(r.item.length>60?'...':'')+'</td><td>'+r.type+'</td><td class="num">'+fmt(r.closingValue)+'</td><td class="num">'+(r.zeroCons?'No (SLOB)':(r.neg6||0)+' txns')+'</td><td>'+(r.zeroCons?'<span class="tag tag-rm">SLOB</span>':'<span class="tag tag-green">Active</span>')+'</td></tr>'; });
@@ -930,7 +929,7 @@ function renderSlobHRML(type, zero, search, sort) {
   document.getElementById('slobPiePMCap').innerHTML = 'PM Total: <b>'+V.PM.total.toFixed(2)+' Cr</b> / '+c.pmItems+' items &nbsp;|&nbsp; PM SLOB: <b>'+V.PM.slob.toFixed(2)+' Cr</b> / '+c.pmSlob+' items ('+V.PM.pct+'%)';
   var filtered = rows.filter(function(r){ if(type!=='all'&&r.type!==type)return false; if(zero==='slob'&&!r.zeroCons)return false; if(search&&!r.item.toLowerCase().includes(search)&&!(r.itemCode||'').toLowerCase().includes(search))return false; return true; });
   applySlobSort(filtered, sort || slobSortValue());
-  if (P) document.getElementById('slobRange').textContent = 'HRML | '+(period||Object.keys(SLOB_HRML.periods).sort().reverse()[0])+' (DataMart.inv.tblInventoryStatement) | RM SLOB '+V.RM.slob.toFixed(2)+' Cr ('+c.rmSlob+' items) | PM SLOB '+V.PM.slob.toFixed(2)+' Cr ('+c.pmSlob+' items) | Total Inv '+V.totalInv.toFixed(2)+' Cr';
+  if (P) document.getElementById('slobRange').textContent = 'HRML | '+fmtPeriod(period||Object.keys(SLOB_HRML.periods).sort().reverse()[0])+' (DataMart.inv.tblInventoryStatement) | RM SLOB '+V.RM.slob.toFixed(2)+' Cr ('+c.rmSlob+' items) | PM SLOB '+V.PM.slob.toFixed(2)+' Cr ('+c.pmSlob+' items) | Total Inv '+V.totalInv.toFixed(2)+' Cr';
   else document.getElementById('slobRange').textContent = 'HRML | '+SLOB_HRML.window+' (DataMart.inv.tblInventoryStatement) | RM SLOB '+V.RM.slob.toFixed(2)+' Cr ('+c.rmSlob+' items) | PM SLOB '+V.PM.slob.toFixed(2)+' Cr ('+c.pmSlob+' items) | Total Inv '+V.totalInv.toFixed(2)+' Cr';
   var h = '<table class="tbl"><thead><tr><th>#</th><th>Item Code</th><th>Item</th><th>Type</th><th class="num">Closing Value</th><th class="num">6-mo Consumed? (neg qty)</th><th>Flag</th></tr></thead><tbody>';
   var idx=0;

@@ -47,19 +47,25 @@ async function run(){
     const pool = await sql.connect(config);
     const codeMap = await getItemCodeMap(pool);
     console.log('Item code map: '+Object.keys(codeMap).length+' names');
+    const today = new Date();
+    const iso = d => d.toISOString().split('T')[0];
+    const asOf1 = iso(today);
+    const key1 = asOf1.slice(0,7);
+    const prevEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+    const asOf2 = iso(prevEnd);
+    const key2 = asOf2.slice(0,7);
     const periods = {};
-    const aug = await period(pool, '2026-08-22', '2026-08', codeMap);
-    periods['2026-08'] = aug;
-    const jul = await period(pool, '2026-07-31', '2026-07', codeMap);
-    periods['2026-07'] = jul;
+    const p1 = await period(pool, asOf1, key1, codeMap);
+    periods[key1] = p1;
+    const p2 = await period(pool, asOf2, key2, codeMap);
+    periods[key2] = p2;
     await pool.close();
-    const out = { sbu:'FAL', sbuName:'Fariq Agro Ltd.', source:'DataMart.inv.tblInventoryStatement', window:'6-mo trailing', periods };
+    const out = { sbu:'FAL', sbuName:'Fariq Agro Ltd.', source:'DataMart.inv.tblInventoryStatement', window:'6-mo trailing (as of '+asOf1+')', periods };
     fs.writeFileSync('C:\\Users\\saada\\OneDrive\\Documents\\Default Project\\slob_fal.js','const SLOB_FAL = '+JSON.stringify(out)+';');
-    console.log('Saved slob_fal.js (statement-based)');
-    ['2026-08','2026-07'].forEach(k=>{
+    console.log('Saved slob_fal.js (statement-based) as-of '+asOf1);
+    Object.keys(periods).sort().reverse().forEach(k=>{
       const p=periods[k];
-      console.log(k+': RM total='+p.values.RM.total.toFixed(2)+' SLOB='+p.values.RM.slob.toFixed(2)+' ('+p.values.RM.pct+'%) | PM total='+p.values.PM.total.toFixed(2)+' SLOB='+p.values.PM.slob.toFixed(2)+' ('+p.values.PM.pct+'%) | Other total='+p.values.Other.total.toFixed(2)+' SLOB='+p.values.Other.slob.toFixed(2)+' | All='+p.values.totalInv.toFixed(2)+' SLOB='+p.values.slobTotal.toFixed(2));
-      console.log('  counts', JSON.stringify(p.counts));
+      console.log(k+' ('+(k===key1?asOf1:asOf2)+'): RM total='+p.values.RM.total.toFixed(2)+' SLOB='+p.values.RM.slob.toFixed(2)+' ('+p.values.RM.pct+'%) | PM total='+p.values.PM.total.toFixed(2)+' SLOB='+p.values.PM.slob.toFixed(2)+' ('+p.values.PM.pct+'%) | Other total='+p.values.Other.total.toFixed(2)+' SLOB='+p.values.Other.slob.toFixed(2)+' | All='+p.values.totalInv.toFixed(2)+' SLOB='+p.values.slobTotal.toFixed(2));
     });
   }catch(e){console.error('ERR',e.message); console.error(e.stack);}
 }
