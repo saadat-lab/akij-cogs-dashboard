@@ -164,7 +164,7 @@ canvas { max-height: 340px; }
     </div>
     <canvas id="chartDaily"></canvas>
   </div>
-  <div class="card"><h3>COGS MIX BY SBU</h3><canvas id="chartMix"></canvas></div>
+  <div class="card"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;"><h3 style="margin:0;">COGS MIX BY SBU</h3><select id="mixMatFilter" onchange="chartMix()" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;box-shadow:var(--shadow);"><option value="all">All Materials</option></select></div><canvas id="chartMix"></canvas></div>
 </div>
 
 <!-- SBU Detail Table -->
@@ -512,12 +512,46 @@ function chartDaily() {
 
 function chartMix() {
   dc('d');
-  const d = rawData.summary;
+  var sel = (document.getElementById('mixMatFilter') ? document.getElementById('mixMatFilter').value : 'all') || 'all';
+  var d = rawData.summary;
+  var hasDaily = (typeof DAILY_DATA !== 'undefined' && DAILY_DATA.length && DAILY_DATA[0].length === 5);
+  var data, titleSuffix='';
+  if(sel==='all'){
+    data=d.map(function(x){return x.cogs;});
+  } else if(sel==='Raw Materials'){
+    data=d.map(function(x){return x.rmCons;}); titleSuffix=' — Raw Materials';
+  } else if(sel==='Packaging Materials'){
+    data=d.map(function(x){return x.pmCons;}); titleSuffix=' — Packaging Materials';
+  } else if(hasDaily){
+    var bySbu={}; d.forEach(function(s){ bySbu[s.code]=0; });
+    DAILY_DATA.forEach(function(r){
+      // DAILY_DATA new format: [dt,sbu,txn,mtype,value_m] ; old: [dt,txn,mtype,value_m]
+      var mtype = hasDaily ? r[3] : r[2];
+      var sbu = hasDaily ? r[1] : null;
+      var v = hasDaily ? r[4] : r[3];
+      if(mtype===sel && bySbu.hasOwnProperty(sbu)) bySbu[sbu]+= Math.abs(v)*1e6;
+      // for old format without sbu, distribute? skip
+      if(!hasDaily && r[2]===sel){
+        // old data has no sbu - cannot split by SBU, aggregate evenly? fallback to 0
+      }
+    });
+    data=d.map(function(x){ return Math.round(bySbu[x.code]||0); });
+    titleSuffix=' — '+sel;
+  } else {
+    data=d.map(function(){return 0;}); titleSuffix=' — '+sel;
+  }
+  // If all zeros (e.g. no daily data for this type) fallback to cogs to avoid empty pie
+  var totalData=data.reduce(function(a,b){return a+b;},0);
+  if(totalData===0 && sel!=='all'){
+    // try to show zero pie with hint
+  }
   const ctx = document.getElementById('chartMix').getContext('2d');
   ci.d = new Chart(ctx, {
-    type: 'doughnut', data: { labels: d.map(x=>x.name), datasets: [{data:d.map(x=>x.cogs),backgroundColor:d.map(x=>sbuColors[x.code]),borderColor:'#fff',borderWidth:2}] },
-    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'right',labels:{color:'#6b7280',font:{size:10},padding:8}},tooltip:{callbacks:{label:c=>c.label+': '+fmt(c.raw)+' BDT ('+fmtPct(c.raw,c.dataset.data.reduce((a,b)=>a+b,0))+')'}}} }
+    type: 'doughnut', data: { labels: d.map(function(x){return x.name;}), datasets: [{data:data,backgroundColor:d.map(function(x){return sbuColors[x.code];}),borderColor:'#fff',borderWidth:2}] },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'right',labels:{color:'#6b7280',font:{size:10},padding:8}},tooltip:{callbacks:{label:function(c){ return c.label+': '+fmt(c.raw)+' BDT ('+fmtPct(c.raw,c.dataset.data.reduce(function(a,b){return a+b;},0))+')';}}}, title:{display:!!titleSuffix, text:'COGS MIX BY SBU'+titleSuffix, color:'#6b7280', font:{size:11, weight:'600'}} } }
   });
+  var h3=document.querySelector('#chartMix').closest('.card').querySelector('h3');
+  if(h3) h3.textContent='COGS MIX BY SBU'+titleSuffix;
 }
 
 // ===== DETAIL TABLE =====
@@ -1230,6 +1264,16 @@ function init() {
   chartCogsBySbu();
   chartRmPm();
   initDaily();
+  // populate COGS MIX material filter
+  var mixSel=document.getElementById('mixMatFilter');
+  if(mixSel && mixSel.options.length===1){
+    var types=new Set(['Raw Materials','Packaging Materials']);
+    if(typeof DAILY_DATA!=='undefined' && DAILY_DATA.length){
+      var hasSbuMix=DAILY_DATA[0].length===5;
+      DAILY_DATA.forEach(function(r){ types.add(hasSbuMix?r[3]:r[2]); });
+    }
+    [...types].sort().forEach(function(t){ var o=document.createElement('option'); o.value=t; o.textContent=t; mixSel.appendChild(o); });
+  }
   chartDaily();
   chartMix();
   buildDetailTable('cogs');
