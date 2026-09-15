@@ -721,9 +721,8 @@ function toggleMonthly(idx, key) {
   var months = [...new Set(monthlyData.map(d=>d.yr+'-'+String(d.mon).padStart(2,'0')))].sort();
   var monthsShort = months.map(m=>{var parts=m.split('-');var mn=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return mn[+parts[1]]+" '"+parts[0].slice(2);});
   
-  // Build column groups per month: value, qty
   var headerHtml = '<tr><th>Period</th>';
-  monthsShort.forEach(m=>{ headerHtml += '<th>'+m+' Val</th><th>'+m+' Qty</th>'; });
+  monthsShort.forEach(m=>{ headerHtml += '<th>'+m+'</th>'; });
   headerHtml += '</tr>';
   
   var valueRow = '<tr><td style="font-weight:600;">Value (BDT)</td>';
@@ -744,7 +743,7 @@ function toggleMonthly(idx, key) {
   });
   valueRow += '</tr>'; qtyRow += '</tr>'; rateRow += '</tr>'; txnRow += '</tr>';
   
-  var rowHtml = '<tr class="monthly-row" id="mr'+idx+'"><td colspan="10" style="padding:8px 10px;">'+
+  var rowHtml = '<tr class="monthly-row" id="mr'+idx+'"><td colspan="14" style="padding:8px 10px;">'+
     '<div id="dateRangeBar" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;font-size:11px;">'+
       '<span style="color:var(--muted);">From:</span><input type="month" id="drFrom" value="2025-07" onchange="filterMonthly('+idx+',\''+key.replace(/'/g,"\\'")+'\')" style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:11px;">'+
       '<span style="color:var(--muted);">To:</span><input type="month" id="drTo" value="2026-08" onchange="filterMonthly('+idx+',\''+key.replace(/'/g,"\\'")+'\')" style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:11px;">'+
@@ -771,7 +770,7 @@ function filterMonthly(idx, key) {
   var monthsShort = months.map(m=>{var parts=m.split('-');var mn=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return mn[+parts[1]]+" '"+parts[0].slice(2);});
   
   var headerHtml = '<tr><th>Period</th>';
-  monthsShort.forEach(m=>{ headerHtml += '<th>'+m+' Val</th><th>'+m+' Qty</th>'; });
+  monthsShort.forEach(m=>{ headerHtml += '<th>'+m+'</th>'; });
   headerHtml += '</tr>';
   
   var valueRow = '<tr><td style="font-weight:600;">Value (BDT)</td>';
