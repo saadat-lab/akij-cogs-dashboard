@@ -9,6 +9,8 @@ try {
   node refresh_cogs.js 2>&1 | Tee-Object -FilePath $log -Append | Out-String | Write-Output
   log "Running fetch_yoy.js..."
   node fetch_yoy.js 2>&1 | Tee-Object -FilePath $log -Append | Out-String | Write-Output
+  log "Running fetch_daily.js (with SBU)..."
+  node fetch_daily.js 2>&1 | Tee-Object -FilePath $log -Append | Out-String | Write-Output
   log "Running fetch_slob_aafl.js..."
   node fetch_slob_aafl.js 2>&1 | Tee-Object -FilePath $log -Append | Out-String | Write-Output
   log "Running fetch_slob_hrml.js..."

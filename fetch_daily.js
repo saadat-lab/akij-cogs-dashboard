@@ -21,6 +21,7 @@ async function run() {
     WITH item_data AS (
       SELECT
         CONVERT(DATE, h.dteTransactionDate) AS dt,
+        b.strBusinessUnitCode AS sbu,
         h.strTransactionTypeName AS txn,
         COALESCE(m.strItemMasterTypeName,
           CASE
@@ -37,16 +38,17 @@ async function run() {
         AND h.dteTransactionDate >= '2026-07-01'
         AND h.TransactionGroupId = 2
     )
-    SELECT dt, txn, mtype,
+    SELECT dt, sbu, txn, mtype,
       ROUND(SUM(val) / 1000000, 3) AS value_m
     FROM item_data
-    GROUP BY dt, txn, mtype
-    ORDER BY dt, txn, mtype
+    GROUP BY dt, sbu, txn, mtype
+    ORDER BY dt, sbu, txn, mtype
   `);
   console.log(`Fetched ${res.recordset.length} daily rows`);
 
   const daily = res.recordset.map(r => [
     r.dt.toISOString().split('T')[0],
+    r.sbu,
     r.txn,
     r.mtype,
     r.value_m
