@@ -57,7 +57,7 @@ async function run() {
   console.log('Saved items_data.js');
 
   // 2. MONTHLY DATA - indexed by composite key
-  console.log('Fetching monthly data (Jul 2025 onwards)...');
+  console.log('Fetching monthly data (Jul 2024 onwards)...');
   const monthlyRes = await pool.request().query(`
     SELECT b.strBusinessUnitCode AS sbu,
       r.strItemName AS item,
@@ -71,8 +71,8 @@ async function run() {
     JOIN wms.tblInventoryTransactionHeaderArc h ON r.intInventoryTransactionId = h.intInventoryTransactionId
     JOIN dco.tblbusinessunitArc b ON h.intBusinessUnitId = b.intBusinessUnitId
     WHERE h.intBusinessUnitId IN (${SBU_IDS.join(',')})
-      AND h.dteTransactionDate >= '2025-07-01'
-      AND h.TransactionGroupId = 2
+        AND h.dteTransactionDate >= '2024-07-01'
+        AND h.TransactionGroupId = 2
     GROUP BY b.strBusinessUnitCode, r.strItemName, h.strTransactionTypeName,
       YEAR(h.dteTransactionDate), MONTH(h.dteTransactionDate)
     ORDER BY sbu, item, txn_type, yr, mon

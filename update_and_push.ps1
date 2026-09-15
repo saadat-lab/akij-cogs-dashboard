@@ -11,6 +11,8 @@ try {
   node fetch_yoy.js 2>&1 | Tee-Object -FilePath $log -Append | Out-String | Write-Output
   log "Running fetch_daily.js (with SBU)..."
   node fetch_daily.js 2>&1 | Tee-Object -FilePath $log -Append | Out-String | Write-Output
+  log "Running fetch_items.js (monthly Jul 2024)..."
+  node fetch_items.js 2>&1 | Tee-Object -FilePath $log -Append | Out-String | Write-Output
   log "Running fetch_slob_aafl.js..."
   node fetch_slob_aafl.js 2>&1 | Tee-Object -FilePath $log -Append | Out-String | Write-Output
   log "Running fetch_slob_hrml.js..."
