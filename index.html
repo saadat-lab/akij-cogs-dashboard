@@ -717,8 +717,12 @@ function toggleMonthly(idx, key) {
   var monthlyData = (typeof MONTHLY_DATA !== 'undefined' && MONTHLY_DATA[key]) ? MONTHLY_DATA[key] : [];
   if(monthlyData.length===0) return;
   
-  // Build month columns
-  var months = [...new Set(monthlyData.map(d=>d.yr+'-'+String(d.mon).padStart(2,'0')))].sort();
+  // Build month columns — respect default From/To (2025-07 → 2026-08) on first open, not all history back to 2024-07
+  var _from="2025-07", _to="2026-08";
+  var filteredInit = monthlyData.filter(function(d){ var ym=d.yr+'-'+String(d.mon).padStart(2,'0'); return ym>=_from && ym<=_to; });
+  // if item has no data in default range (e.g. started later), show its available range instead
+  var monthsSrc = filteredInit.length ? filteredInit : monthlyData;
+  var months = [...new Set(monthsSrc.map(function(d){return d.yr+'-'+String(d.mon).padStart(2,'0');}))].sort();
   var monthsShort = months.map(m=>{var parts=m.split('-');var mn=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return mn[+parts[1]]+" '"+parts[0].slice(2);});
   
   var headerHtml = '<tr><th>Period</th>';
