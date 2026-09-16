@@ -158,6 +158,7 @@ canvas { max-height: 340px; }
 <div class="grid cols-2" style="margin-top:16px;">
   <div class="card"><h3>DAILY COGS TREND</h3>
     <div class="filter-bar" style="margin-bottom:10px;">
+      <select id="dailyGranularity" onchange="chartDaily()" title="Granularity" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;box-shadow:var(--shadow);"><option value="daily">Daily</option><option value="monthly">Monthly</option><option value="yearly">Yearly</option></select>
       <select id="dailySbuFilter" onchange="chartDaily()" title="SBU"><option value="all">All SBUs</option></select>
       <select id="dailyTxnFilter" onchange="chartDaily()" title="Consumption type"><option value="all">All Consumption Types</option></select>
       <select id="dailyMatFilter" onchange="chartDaily()" title="Material type"><option value="all">All Materials</option></select>
@@ -468,47 +469,84 @@ function chartDaily() {
   dc('c');
   const ctx = document.getElementById('chartDaily').getContext('2d');
   const months=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var gran = (document.getElementById('dailyGranularity') ? document.getElementById('dailyGranularity').value : 'daily') || 'daily';
+  // helper to aggregate DAILY_DATA by period
+  function aggregateDailyBy(period){ // period: 'daily','monthly','yearly'
+    if(typeof DAILY_DATA==='undefined' || !DAILY_DATA.length) return null;
+    var hasSbu=DAILY_DATA[0].length===5;
+    var sbu=hasSbu?document.getElementById('dailySbuFilter').value:'all';
+    var txn=document.getElementById('dailyTxnFilter').value;
+    var mat=document.getElementById('dailyMatFilter').value;
+    var rows=DAILY_DATA.filter(function(r){
+      var rsbu=hasSbu?r[1]:null; var rtxn=hasSbu?r[2]:r[1]; var rmtype=hasSbu?r[3]:r[2];
+      return (sbu==='all'||!hasSbu||rsbu===sbu) && (txn==='all'||rtxn===txn) && (mat==='all'||rmtype===mat);
+    });
+    var byPeriod={}; // key -> {mtype: sum}
+    var allMtypes=new Set();
+    rows.forEach(function(r){
+      var dt=r[0]; var mtype=hasSbu?r[3]:r[2]; var v=Math.abs(hasSbu?r[4]:r[3]);
+      var key;
+      if(period==='monthly') key=dt.slice(0,7); // YYYY-MM
+      else if(period==='yearly') key=dt.slice(0,4); // YYYY
+      else key=dt; // daily
+      if(!byPeriod[key]) byPeriod[key]={};
+      byPeriod[key][mtype]=(byPeriod[key][mtype]||0)+v;
+      allMtypes.add(mtype);
+    });
+    var keys=Object.keys(byPeriod).sort();
+    var labels=keys.map(function(k){
+      if(period==='monthly'){ var p=k.split('-'); return months[+p[1]]+' '+p[0].slice(2); }
+      if(period==='yearly') return k;
+      var p=k.split('-'); return months[+p[1]]+' '+ +p[2];
+    });
+    return {byPeriod:byPeriod, keys:keys, labels:labels, allMtypes:[...allMtypes].sort(), mat:mat};
+  }
   if (typeof DAILY_DATA === 'undefined' || !DAILY_DATA.length) {
-    // fallback: accounting-journal daily view
+    // fallback: accounting-journal daily/monthly view from rawData
+    if(gran==='monthly'){
+      var mkeys=Object.keys(rawData.monthly||{}).sort();
+      var labelsM=mkeys.map(function(k){ var p=k.split('-'); return months[+p[1]]+' '+p[0]; });
+      // aggregate monthly cogs/rm per SBU filter if needed? For fallback, just sum across all SBUs
+      var sbuF=document.getElementById('dailySbuFilter')?document.getElementById('dailySbuFilter').value:'all';
+      var dataM=mkeys.map(function(k){
+        var per=rawData.monthly[k]||{};
+        if(sbuF==='all') return Object.values(per).reduce(function(s,v){return s+(v[0]||0);},0)/1e7;
+        var v=per[sbuF]; return v? v[0]/1e7 : 0;
+      });
+      ci.c=new Chart(ctx,{type:'line',data:{labels:labelsM,datasets:[{label:'Monthly COGS (Cr BDT)',data:dataM,borderColor:'#4f6ef7',backgroundColor:'rgba(79,110,247,0.08)',fill:true,tension:0.3,pointRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{tooltip:{callbacks:{label:function(c){return c.dataset.label+': '+c.parsed.y.toFixed(2)+' Cr';}}}},scales:{x:{ticks:{color:'#6b7280',font:{size:9}}},y:{ticks:{color:'#6b7280',callback:function(v){return v.toFixed(1)+' Cr';}},grid:{color:'#f0f0f0'}}}}});
+      return;
+    }
+    if(gran==='yearly'){
+      var ymap={}; Object.keys(rawData.monthly||{}).forEach(function(k){ var yr=k.split('-')[0]; var per=rawData.monthly[k]||{}; var sum=Object.values(per).reduce(function(s,v){return s+(v[0]||0);},0); ymap[yr]=(ymap[yr]||0)+sum; });
+      var ykeys=Object.keys(ymap).sort(); var ylabels=ykeys; var ydata=ykeys.map(function(y){return ymap[y]/1e7;});
+      ci.c=new Chart(ctx,{type:'line',data:{labels:ylabels,datasets:[{label:'Yearly COGS (Cr BDT)',data:ydata,borderColor:'#10b981',backgroundColor:'rgba(16,185,129,0.08)',fill:true,tension:0.3,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{tooltip:{callbacks:{label:function(c){return c.dataset.label+': '+c.parsed.y.toFixed(2)+' Cr';}}}},scales:{x:{ticks:{color:'#6b7280'}},y:{ticks:{color:'#6b7280',callback:function(v){return v.toFixed(1)+' Cr';}},grid:{color:'#f0f0f0'}}}}});
+      return;
+    }
     const dl = rawData.daily||[];
-    const labels = dl.map(d=>months[+d[0].split('-')[1]]+' '+ +d[0].split('-')[2]);
+    const labels = dl.map(function(d){ var p=d[0].split('-'); return months[+p[1]]+' '+ +p[2]; });
     ci.c = new Chart(ctx, {
-      type: 'line', data: { labels, datasets: [{label:'Daily COGS (Cr BDT)',data:dl.map(d=>d[1]/10),borderColor:'#4f6ef7',backgroundColor:'rgba(79,110,247,0.08)',fill:true,tension:0.3,pointRadius:2},{label:'Daily RM Consumed (Cr BDT)',data:dl.map(d=>d[2]/10),borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.05)',fill:true,tension:0.3,pointRadius:1,hidden:true}] },
-      options: { responsive:true, maintainAspectRatio:false, plugins:{tooltip:{callbacks:{label:c=>c.dataset.label.replace(' (Cr BDT)','')+': '+c.raw.toFixed(2)+' Cr'}}}, scales:{x:{ticks:{color:'#6b7280',font:{size:9},maxTicksLimit:21}},y:{ticks:{color:'#6b7280',callback:v=>v.toFixed(1)+' Cr'},grid:{color:'#f0f0f0'}}} }
+      type: 'line', data: { labels:labels, datasets: [{label:'Daily COGS (Cr BDT)',data:dl.map(function(d){return d[1]/10;}),borderColor:'#4f6ef7',backgroundColor:'rgba(79,110,247,0.08)',fill:true,tension:0.3,pointRadius:2},{label:'Daily RM Consumed (Cr BDT)',data:dl.map(function(d){return d[2]/10;}),borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.05)',fill:true,tension:0.3,pointRadius:1,hidden:true}] },
+      options: { responsive:true, maintainAspectRatio:false, plugins:{tooltip:{callbacks:{label:function(c){ return c.dataset.label.replace(' (Cr BDT)','')+': '+c.raw.toFixed(2)+' Cr';}}}}, scales:{x:{ticks:{color:'#6b7280',font:{size:9},maxTicksLimit:21}},y:{ticks:{color:'#6b7280',callback:function(v){return v.toFixed(1)+' Cr';}},grid:{color:'#f0f0f0'}}} }
     });
     return;
   }
-  var hasSbu = DAILY_DATA[0].length === 5;
-  var sbu = hasSbu ? document.getElementById('dailySbuFilter').value : 'all';
-  const txn = document.getElementById('dailyTxnFilter').value;
-  const mat = document.getElementById('dailyMatFilter').value;
-  const rows = DAILY_DATA.filter(function(r){
-    var rsbu = hasSbu ? r[1] : null;
-    var rtxn = hasSbu ? r[2] : r[1];
-    var rmtype = hasSbu ? r[3] : r[2];
-    return (sbu==='all' || !hasSbu || rsbu===sbu) && (txn==='all' || rtxn===txn) && (mat==='all' || rmtype===mat);
-  });
-  const byDate = {};
-  rows.forEach(function(r){
-    const dt=r[0], mt= hasSbu ? r[3] : r[2], v=Math.abs(hasSbu ? r[4] : r[3]);
-    if(!byDate[dt]) byDate[dt]={};
-    byDate[dt][mt]=(byDate[dt][mt]||0)+v;
-  });
-  const dates = Object.keys(byDate).sort();
-  const labels = dates.map(function(d){ const p=d.split('-'); return months[+p[1]]+' '+ +p[2]; });
-  const datasets = [];
-  const colors = ['#4f6ef7','#ec4899','#f59e0b','#14b8a6','#10b981'];
-  if (mat === 'all') {
-    const mtypes = [...new Set(rows.map(function(r){ return hasSbu ? r[3] : r[2]; }))].sort();
-    mtypes.forEach(function(mt,i){
-      datasets.push({ label: mt+' (Cr BDT)', data: dates.map(function(d){ return +(((byDate[d][mt]||0)/10).toFixed(3)); }), borderColor: colors[i%colors.length], backgroundColor: colors[i%colors.length]+'22', fill:false, tension:0.3, pointRadius:2 });
+  var agg=aggregateDailyBy(gran);
+  if(!agg || !agg.keys.length){
+    ci.c=new Chart(ctx,{type:'line',data:{labels:[],datasets:[]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});
+    return;
+  }
+  var colors=['#4f6ef7','#ec4899','#f59e0b','#14b8a6','#10b981','#8b5cf6','#f43f5e','#06b6d4','#6366f1','#eab308'];
+  var datasets=[];
+  if(agg.mat==='all'){
+    agg.allMtypes.forEach(function(mt,i){
+      datasets.push({label:mt+' (Cr BDT)', data:agg.keys.map(function(k){return +(((agg.byPeriod[k][mt]||0)/10).toFixed(3));}), borderColor:colors[i%colors.length], backgroundColor:colors[i%colors.length]+'22', fill:false, tension:0.3, pointRadius: gran==='daily'?2:3});
     });
   } else {
-    datasets.push({ label: mat+' (Cr BDT)', data: dates.map(function(d){ return +(((byDate[d][mat]||0)/10).toFixed(3)); }), borderColor: '#4f6ef7', backgroundColor: 'rgba(79,110,247,0.08)', fill:true, tension:0.3, pointRadius:2 });
+    datasets.push({label:agg.mat+' (Cr BDT)', data:agg.keys.map(function(k){return +(((agg.byPeriod[k][agg.mat]||0)/10).toFixed(3));}), borderColor:'#4f6ef7', backgroundColor:'rgba(79,110,247,0.08)', fill:true, tension:0.3, pointRadius: gran==='daily'?2:3});
   }
   ci.c = new Chart(ctx, {
-    type: 'line', data: { labels, datasets },
-    options: { responsive:true, maintainAspectRatio:false, plugins:{tooltip:{callbacks:{label:function(c){ return c.dataset.label.replace(' (Cr BDT)','')+': '+c.parsed.y.toFixed(2)+' Cr'; }}}}, scales:{x:{ticks:{color:'#6b7280',font:{size:9},maxTicksLimit:21}},y:{ticks:{color:'#6b7280',callback:function(v){ return v.toFixed(1)+' Cr'; }},grid:{color:'#f0f0f0'}}} }
+    type: 'line', data: { labels:agg.labels, datasets:datasets },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{tooltip:{callbacks:{label:function(c){ return c.dataset.label.replace(' (Cr BDT)','')+': '+c.parsed.y.toFixed(2)+' Cr'; }}}}, scales:{x:{ticks:{color:'#6b7280',font:{size:9},maxTicksLimit:gran==='daily'?21:12}},y:{ticks:{color:'#6b7280',callback:function(v){return v.toFixed(1)+' Cr';}},grid:{color:'#f0f0f0'}}} }
   });
 }
 
