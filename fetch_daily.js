@@ -35,7 +35,7 @@ async function run() {
       JOIN dco.tblbusinessunitArc b ON h.intBusinessUnitId = b.intBusinessUnitId
       LEFT JOIN itm.tblItemMasterArc m ON r.intItemId = m.intItemMasterId
       WHERE h.intBusinessUnitId IN (${SBU_IDS.join(',')})
-        AND h.dteTransactionDate >= '2026-07-01'
+        AND h.dteTransactionDate >= '2024-07-01'
         AND h.TransactionGroupId = 2
     )
     SELECT dt, sbu, txn, mtype,
