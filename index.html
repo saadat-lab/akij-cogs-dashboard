@@ -158,6 +158,8 @@ canvas { max-height: 340px; }
 <div class="grid cols-2" style="margin-top:16px;">
   <div class="card"><h3>DAILY/MONTHLY/YEARLY COGS TREND</h3>
     <div class="filter-bar" style="margin-bottom:10px;">
+      <input type="date" id="dailyFrom" onchange="chartDaily()" title="From date" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;box-shadow:var(--shadow);">
+      <input type="date" id="dailyTo" onchange="chartDaily()" title="To date" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;box-shadow:var(--shadow);">
       <select id="dailyGranularity" onchange="chartDaily()" title="Granularity" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;box-shadow:var(--shadow);"><option value="daily">Daily</option><option value="monthly">Monthly</option><option value="yearly">Yearly</option></select>
       <select id="dailySbuFilter" onchange="chartDaily()" title="SBU"><option value="all">All SBUs</option></select>
       <select id="dailyTxnFilter" onchange="chartDaily()" title="Consumption type"><option value="all">All Consumption Types</option></select>
@@ -463,6 +465,11 @@ function initDaily() {
   [...new Set(DAILY_DATA.map(function(r){ return hasSbu ? r[2] : r[1]; }))].sort().forEach(function(t){ var o = document.createElement('option'); o.value = t; o.textContent = t; txnSel.appendChild(o); });
   var matSel = document.getElementById('dailyMatFilter');
   [...new Set(DAILY_DATA.map(function(r){ return hasSbu ? r[3] : r[2]; }))].sort().forEach(function(t){ var o = document.createElement('option'); o.value = t; o.textContent = t; matSel.appendChild(o); });
+  // set From/To defaults: From = 2024-07-01 (earliest available), To = today
+  var fromEl=document.getElementById('dailyFrom'), toEl=document.getElementById('dailyTo');
+  var today=new Date().toISOString().split('T')[0];
+  if(fromEl && !fromEl.value){ fromEl.value='2024-07-01'; fromEl.min='2024-07-01'; fromEl.max=today; }
+  if(toEl && !toEl.value){ toEl.value=today; toEl.min='2024-07-01'; toEl.max=today; }
 }
 
 function chartDaily() {
@@ -470,6 +477,9 @@ function chartDaily() {
   const ctx = document.getElementById('chartDaily').getContext('2d');
   const months=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   var gran = (document.getElementById('dailyGranularity') ? document.getElementById('dailyGranularity').value : 'daily') || 'daily';
+  var fromEl=document.getElementById('dailyFrom'), toEl=document.getElementById('dailyTo');
+  var fromVal=fromEl?fromEl.value:'', toVal=toEl?toEl.value:'';
+  var hintEl=document.getElementById('dailyHint');
   // helper to aggregate DAILY_DATA by period
   function aggregateDailyBy(period){ // period: 'daily','monthly','yearly'
     if(typeof DAILY_DATA==='undefined' || !DAILY_DATA.length) return null;
@@ -478,6 +488,9 @@ function chartDaily() {
     var txn=document.getElementById('dailyTxnFilter').value;
     var mat=document.getElementById('dailyMatFilter').value;
     var rows=DAILY_DATA.filter(function(r){
+      var dt=r[0];
+      if(fromVal && dt < fromVal) return false;
+      if(toVal && dt > toVal) return false;
       var rsbu=hasSbu?r[1]:null; var rtxn=hasSbu?r[2]:r[1]; var rmtype=hasSbu?r[3]:r[2];
       return (sbu==='all'||!hasSbu||rsbu===sbu) && (txn==='all'||rtxn===txn) && (mat==='all'||rmtype===mat);
     });
