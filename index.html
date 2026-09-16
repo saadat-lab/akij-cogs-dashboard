@@ -158,6 +158,8 @@ canvas { max-height: 340px; }
 <div class="grid cols-2" style="margin-top:16px;">
   <div class="card"><h3>DAILY COGS TREND</h3>
     <div class="filter-bar" style="margin-bottom:10px;">
+      <input type="date" id="dailyFrom" onchange="chartDaily()" title="From date" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;box-shadow:var(--shadow);">
+      <input type="date" id="dailyTo" onchange="chartDaily()" title="To date" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;box-shadow:var(--shadow);">
       <select id="dailySbuFilter" onchange="chartDaily()" title="SBU"><option value="all">All SBUs</option></select>
       <select id="dailyTxnFilter" onchange="chartDaily()" title="Consumption type"><option value="all">All Consumption Types</option></select>
       <select id="dailyMatFilter" onchange="chartDaily()" title="Material type"><option value="all">All Materials</option></select>
@@ -462,16 +464,26 @@ function initDaily() {
   [...new Set(DAILY_DATA.map(function(r){ return hasSbu ? r[2] : r[1]; }))].sort().forEach(function(t){ var o = document.createElement('option'); o.value = t; o.textContent = t; txnSel.appendChild(o); });
   var matSel = document.getElementById('dailyMatFilter');
   [...new Set(DAILY_DATA.map(function(r){ return hasSbu ? r[3] : r[2]; }))].sort().forEach(function(t){ var o = document.createElement('option'); o.value = t; o.textContent = t; matSel.appendChild(o); });
+  // defaults: From = 2026-07-01 (visual), To = today; allow back to 2024-07-01
+  var fromEl=document.getElementById('dailyFrom'), toEl=document.getElementById('dailyTo');
+  var today=new Date().toISOString().split('T')[0];
+  if(fromEl){ fromEl.value='2026-07-01'; fromEl.min='2024-07-01'; fromEl.max=today; }
+  if(toEl){ toEl.value=today; toEl.min='2024-07-01'; toEl.max=today; }
 }
 
 function chartDaily() {
   dc('c');
   const ctx = document.getElementById('chartDaily').getContext('2d');
   const months=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var fromEl=document.getElementById('dailyFrom'), toEl=document.getElementById('dailyTo');
+  var fromVal=fromEl?fromEl.value:'', toVal=toEl?toEl.value:'';
+  var hintEl=document.getElementById('dailyHint');
   if (typeof DAILY_DATA === 'undefined' || !DAILY_DATA.length) {
-    // fallback: accounting-journal daily view
-    const dl = rawData.daily||[];
+    // fallback: accounting-journal daily view — respect From/To
+    var dl0 = rawData.daily||[];
+    var dl = dl0.filter(function(d){ var dt=d[0]; if(fromVal && dt < fromVal) return false; if(toVal && dt > toVal) return false; return true; });
     const labels = dl.map(function(d){ var p=d[0].split('-'); return months[+p[1]]+' '+ +p[2]; });
+    if(hintEl) hintEl.textContent=dl.length+' days'+(fromVal||toVal?' · '+ (fromVal||'…')+' → '+(toVal||'…'):'')+(dl.length>90?' — daily with '+dl.length+' points is congested, try narrower range':'');
     ci.c = new Chart(ctx, {
       type: 'line', data: { labels:labels, datasets: [{label:'Daily COGS (Cr BDT)',data:dl.map(function(d){return d[1]/10;}),borderColor:'#4f6ef7',backgroundColor:'rgba(79,110,247,0.08)',fill:true,tension:0.3,pointRadius:2},{label:'Daily RM Consumed (Cr BDT)',data:dl.map(function(d){return d[2]/10;}),borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.05)',fill:true,tension:0.3,pointRadius:1,hidden:true}] },
       options: { responsive:true, maintainAspectRatio:false, plugins:{tooltip:{callbacks:{label:function(c){ return c.dataset.label.replace(' (Cr BDT)','')+': '+c.raw.toFixed(2)+' Cr';}}}}, scales:{x:{ticks:{color:'#6b7280',font:{size:9},maxTicksLimit:21}},y:{ticks:{color:'#6b7280',callback:function(v){return v.toFixed(1)+' Cr';}},grid:{color:'#f0f0f0'}}} }
@@ -483,6 +495,9 @@ function chartDaily() {
   const txn = document.getElementById('dailyTxnFilter').value;
   const mat = document.getElementById('dailyMatFilter').value;
   const rows = DAILY_DATA.filter(function(r){
+    var dt=r[0];
+    if(fromVal && dt < fromVal) return false;
+    if(toVal && dt > toVal) return false;
     var rsbu = hasSbu ? r[1] : null;
     var rtxn = hasSbu ? r[2] : r[1];
     var rmtype = hasSbu ? r[3] : r[2];
@@ -506,6 +521,12 @@ function chartDaily() {
   } else {
     datasets.push({ label: mat+' (Cr BDT)', data: dates.map(function(d){ return +(((byDate[d][mat]||0)/10).toFixed(3)); }), borderColor: '#4f6ef7', backgroundColor: 'rgba(79,110,247,0.08)', fill:true, tension:0.3, pointRadius:2 });
   }
+  if(!dates.length){
+    if(hintEl) hintEl.textContent='No data for this range/material — try wider From/To ('+(fromVal||'…')+' → '+(toVal||'…')+')';
+    ci.c=new Chart(ctx,{type:'line',data:{labels:[],datasets:[]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});
+    return;
+  }
+  if(hintEl) hintEl.textContent=dates.length+' days · '+(fromVal||'…')+' → '+(toVal||'…')+(dates.length>90?' — dense, try narrower range':'');
   ci.c = new Chart(ctx, {
     type: 'line', data: { labels, datasets },
     options: { responsive:true, maintainAspectRatio:false, plugins:{tooltip:{callbacks:{label:function(c){ return c.dataset.label.replace(' (Cr BDT)','')+': '+c.parsed.y.toFixed(2)+' Cr'; }}}}, scales:{x:{ticks:{color:'#6b7280',font:{size:9},maxTicksLimit:21}},y:{ticks:{color:'#6b7280',callback:function(v){return v.toFixed(1)+' Cr';}},grid:{color:'#f0f0f0'}}} }
