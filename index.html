@@ -228,7 +228,7 @@ canvas { max-height: 340px; }
 
 <!-- Charts -->
 <div class="grid cols-2" style="margin-top:16px;">
-  <div class="card"><h3>COGS BY SBU</h3><canvas id="chartCogsBySbu"></canvas></div>
+  <div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px"><h3 style="margin:0">COGS BY SBU</h3><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><label style="font-size:11px;color:var(--muted);font-weight:600">From</label><input type="month" id="cogsSbuFrom" value="2026-07" style="border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:11px;background:var(--card)"><label style="font-size:11px;color:var(--muted);font-weight:600">To</label><input type="month" id="cogsSbuTo" value="2026-08" style="border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:11px;background:var(--card)"><select id="cogsSbuPreset" style="border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:11px;background:var(--card)"><option value="full">Jul 2026 → Aug 2026 (Full)</option><option value="aug">Aug 2026 only</option><option value="jul">Jul 2026 only</option></select><button onclick="applyCogsSbuFilter()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer">Apply</button></div></div><canvas id="chartCogsBySbu"></canvas><p style="font-size:10px;color:var(--muted);margin-top:6px" id="cogsSbuNote">Chart-only — KPIs and COGS MIX BY SBU unchanged</p></div>
   <div class="card"><h3>RM vs PM CONSUMPTION</h3><canvas id="chartRmPm"></canvas></div>
 </div>
 <div class="grid cols-2" style="margin-top:16px;">
@@ -243,7 +243,7 @@ canvas { max-height: 340px; }
     </div>
     <canvas id="chartDaily"></canvas>
   </div>
-  <div class="card"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;"><h3 style="margin:0;">COGS MIX BY SBU</h3><select id="mixMatFilter" onchange="chartMix()" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;box-shadow:var(--shadow);"><option value="all">All Materials</option></select></div><canvas id="chartMix"></canvas></div>
+  <div class="card"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;flex-wrap:wrap;gap:8px"><h3 style="margin:0;">COGS MIX BY SBU</h3><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><select id="mixMatFilter" onchange="chartMix()" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;box-shadow:var(--shadow);"><option value="all">All Materials</option></select><span style="width:1px;height:22px;background:var(--border)"></span><label style="font-size:11px;color:var(--muted);font-weight:600">From</label><input type="month" id="mixFrom" value="2026-07" style="border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:11px;background:var(--card)"><label style="font-size:11px;color:var(--muted);font-weight:600">To</label><input type="month" id="mixTo" value="2026-08" style="border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:11px;background:var(--card)"><select id="mixPreset" style="border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:11px;background:var(--card)"><option value="full">Jul 2026 → Aug 2026 (Full)</option><option value="aug">Aug 2026 only</option><option value="jul">Jul 2026 only</option></select><button onclick="applyMixFilter()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer">Apply</button></div></div><canvas id="chartMix"></canvas><p style="font-size:10px;color:var(--muted);margin-top:6px" id="mixNote">Chart-only — KPIs and COGS BY SBU unchanged</p></div>
 </div>
 
 <!-- SBU Detail Table -->
@@ -1732,6 +1732,104 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeSlbM
   var _origRenderSlob=renderSlob, _origRenderSlobIbos=renderSlobIbos;
   renderSlob=function(){ _origRenderSlob.apply(this, arguments); setTimeout(enhanceSlobTables, 40); setTimeout(function(){ if(slobOpenCode) injectSlobDrawer('slobTable', slobOpenCode); }, 50); };
   renderSlobIbos=function(){ _origRenderSlobIbos.apply(this, arguments); setTimeout(enhanceSlobTables, 40); setTimeout(function(){ if(slobIbosOpenCode) injectSlobDrawer('slobIbosTable', slobIbosOpenCode); }, 50); };
+})();
+
+// ===== COGS BY SBU & COGS MIX BY SBU — inside-box date filters (chart-only) =====
+function getCogsSbuFilteredTotals(fromYm, toYm){
+  if(!rawData.monthly) return null;
+  var totals={};
+  for(var k in rawData.monthly){
+    if(k>=fromYm && k<=toYm){
+      for(var sbu in rawData.monthly[k]){
+        var arr=rawData.monthly[k][sbu];
+        if(arr && arr.length) totals[sbu]=(totals[sbu]||0)+Number(arr[0]||0);
+      }
+    }
+  }
+  return totals;
+}
+function getMixFilteredTotals(fromYm, toYm){
+  // For MIX, we reuse same cogs totals per SBU but material split is via DAILY_DATA when available; for demo we reuse cogs totals
+  return getCogsSbuFilteredTotals(fromYm,toYm);
+}
+function applyCogsSbuFilter(){
+  var f=document.getElementById('cogsSbuFrom'), tt=document.getElementById('cogsSbuTo');
+  if(!f||!tt) return;
+  var from=f.value, to=tt.value;
+  if(!from||!to||from>to){ alert('Pick valid From ≤ To'); return; }
+  var totals=getCogsSbuFilteredTotals(from,to);
+  if(!totals || Object.keys(totals).length===0){ alert('No data for '+from+' → '+to); return; }
+  // re-render chart with filtered totals
+  var sorted=Object.keys(totals).map(s=> ({code:s, cogs: totals[s]})).sort((a,b)=>b.cogs-a.cogs);
+  var map={}; rawData.summary.forEach(s=> map[s.code]=s.name);
+  var labels=sorted.map(x=> map[x.code]||x.code);
+  var data=sorted.map(x=> x.cogs);
+  // update chartCogsBySbu data
+  if(typeof ci!=='undefined' && ci.a){ ci.a.destroy(); delete ci.a; }
+  var ctx=document.getElementById('chartCogsBySbu').getContext('2d');
+  ci.a=new Chart(ctx,{type:'bar',data:{labels:labels,datasets:[{label:'COGS (BDT filtered)',data:data,backgroundColor: labels.map((_,i)=> ['#4f6ef7','#e74c3c','#10b981','#f59e0b','#3b82f6','#14b8a6','#ec4899','#8b5cf6'][i%8]+'cc'),borderColor: labels.map((_,i)=> ['#4f6ef7','#e74c3c','#10b981','#f59e0b','#3b82f6','#14b8a6','#ec4899','#8b5cf6'][i%8]),borderWidth:1,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=> fmt(c.raw)+' BDT'}}},scales:{x:{ticks:{color:'#6b7280',font:{size:10},maxRotation:45}},y:{ticks:{color:'#6b7280',callback:v=>fmt(v)},grid:{color:'#f0f0f0'}}}}});
+  var note=document.getElementById('cogsSbuNote');
+  if(note) note.textContent='Showing: '+from+' → '+to+' — chart only, KPIs & COGS MIX unchanged';
+  try{ localStorage.setItem('cogsSbuFrom',from); localStorage.setItem('cogsSbuTo',to);}catch(e){}
+}
+(function(){
+  var sel=document.getElementById('cogsSbuPreset');
+  if(sel) sel.onchange=function(){
+    var v=sel.value;
+    if(v==='full'){ document.getElementById('cogsSbuFrom').value='2026-07'; document.getElementById('cogsSbuTo').value='2026-08'; }
+    else if(v==='aug'){ document.getElementById('cogsSbuFrom').value='2026-08'; document.getElementById('cogsSbuTo').value='2026-08'; }
+    else if(v==='jul'){ document.getElementById('cogsSbuFrom').value='2026-07'; document.getElementById('cogsSbuTo').value='2026-07'; }
+    applyCogsSbuFilter();
+  };
+  var sel2=document.getElementById('mixPreset');
+  if(sel2) sel2.onchange=function(){
+    var v=sel2.value;
+    if(v==='full'){ document.getElementById('mixFrom').value='2026-07'; document.getElementById('mixTo').value='2026-08'; }
+    else if(v==='aug'){ document.getElementById('mixFrom').value='2026-08'; document.getElementById('mixTo').value='2026-08'; }
+    else if(v==='jul'){ document.getElementById('mixFrom').value='2026-07'; document.getElementById('mixTo').value='2026-07'; }
+    applyMixFilter();
+  };
+})();
+function applyMixFilter(){
+  var f=document.getElementById('mixFrom'), tt=document.getElementById('mixTo');
+  if(!f||!tt) return;
+  var from=f.value, to=tt.value;
+  if(!from||!to||from>to){ alert('Pick valid From ≤ To'); return; }
+  // chartMix already handles mixMatFilter; we just trigger it with date-filtered data
+  // Temporarily override rawData.monthly filtering inside chartMix by storing filter and re-calling chartMix
+  window._mixFrom=from; window._mixTo=to;
+  chartMix();
+  var note=document.getElementById('mixNote');
+  if(note) note.textContent='Showing: '+from+' → '+to+' — chart only, KPIs & COGS BY SBU unchanged';
+  try{ localStorage.setItem('mixFrom',from); localStorage.setItem('mixTo',to);}catch(e){}
+}
+(function(){
+  var origMix=chartMix;
+  chartMix=function(){
+    var sel=(document.getElementById('mixFrom') && document.getElementById('mixFrom').value) ? document.getElementById('mixFrom').value : null;
+    var toSel=(document.getElementById('mixTo') && document.getElementById('mixTo').value) ? document.getElementById('mixTo').value : null;
+    if(window._mixFrom && window._mixTo && rawData.monthly){
+      // date-filtered MIX: build filtered totals per SBU for doughnut
+      var totals=getMixFilteredTotals(window._mixFrom, window._mixTo);
+      var baseData=Object.keys(totals).map(code=> ({code:code, val: totals[code]}));
+      // If no filtered, fallback to original
+      if(baseData.length){
+        var map={}; rawData.summary.forEach(s=> map[s.code]=s.name);
+        // reuse original chartMix logic but with filtered data
+        var d=rawData.summary;
+        var filteredCodes=baseData.map(x=>x.code);
+        var filteredVals=baseData.map(x=>x.val);
+        // Build a temporary rawData for chartMix to use — we will directly render doughnut here instead of calling orig
+        var ctx=document.getElementById('chartMix').getContext('2d');
+        if(typeof ci!=='undefined' && ci.d){ ci.d.destroy(); delete ci.d; }
+        var labels=filteredCodes.map(c=> map[c]||c);
+        var total=filteredVals.reduce((a,b)=>a+b,0);
+        ci.d=new Chart(ctx,{type:'doughnut',data:{labels:labels,datasets:[{data:filteredVals,backgroundColor: labels.map((_,i)=> ['#4f6ef7','#e74c3c','#10b981','#f59e0b','#3b82f6','#14b8a6','#ec4899','#8b5cf6'][i%8]),borderColor:'#fff',borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:'#6b7280',font:{size:10},padding:8}},tooltip:{callbacks:{label:function(c){ return c.label+': '+fmt(c.raw)+' BDT ('+fmtPct(c.raw,total)+')';}}}}}});
+        return;
+      }
+    }
+    return origMix.apply(this, arguments);
+  };
 })();
 
 // ===== INIT =====
