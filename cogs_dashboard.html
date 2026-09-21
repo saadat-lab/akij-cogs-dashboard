@@ -193,12 +193,28 @@ canvas { max-height: 340px; }
 <!-- AI Insights -->
 <div class="insight-box" id="insights"><h3>AI INSIGHTS</h3><div id="insights-content"></div></div>
 
-<!-- Filters -->
-<div class="filter-bar">
+<!-- Filters + KPI Date Range INLINE (combined, uses empty space) -->
+<div class="filter-bar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
   <select id="sbuFilter" onchange="applyFilters()"><option value="all">All SBUs</option></select>
   <select id="materialFilter" onchange="applyFilters()"><option value="all">All Materials</option><option value="Raw Material">Raw Material</option><option value="Packaging Material">Packaging Material</option></select>
   <select id="viewMode" onchange="applyFilters()"><option value="consumption">Consumption Only</option><option value="purchase">Purchase Only</option><option value="cogs">COGS View</option></select>
-  <button onclick="resetFilters()">Reset</button>
+  <button onclick="resetFilters()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Reset</button>
+  <div style="width:1px;height:24px;background:var(--border);margin:0 6px"></div>
+  <span style="font-size:11px;font-weight:800;color:var(--accent);letter-spacing:0.2px">KPI Date Range</span>
+  <label style="font-size:11px;color:var(--muted);font-weight:600">From</label>
+  <input type="date" id="kpiFrom" value="2024-07-01" min="2024-07-01" style="border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;background:var(--card)">
+  <label style="font-size:11px;color:var(--muted);font-weight:600">To</label>
+  <input type="date" id="kpiTo" value="2026-09-21" min="2024-07-01" style="border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;background:var(--card)">
+  <select id="kpiPreset" style="border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;background:var(--card)">
+    <option value="full">Jul 2024 → Today (Full)</option>
+    <option value="30d">Last 30 Days</option>
+    <option value="3m">Last 3 Months</option>
+    <option value="aug">Aug 2026 only</option>
+    <option value="jul">Jul 2026 only</option>
+  </select>
+  <button onclick="applyKpiDateFilter()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Apply</button>
+  <button onclick="resetKpiDateFilter()" style="background:var(--card);border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:6px 12px;font-size:11px;font-weight:600;cursor:pointer">Reset to Full</button>
+  <span style="font-size:11px;color:var(--muted)" id="kpiRangeNote">Showing: <b>2024-07-01 → 2026-09-21 (Full)</b></span>
   <span style="margin-left:auto;color:var(--muted);font-size:11px;" id="lastUpdate"></span>
 </div>
 
@@ -532,6 +548,77 @@ function updateKPIs() {
   document.getElementById('kpiPm').textContent = fmt(d.reduce((s,x)=>s+x.pmCons,0))+' BDT';
   document.getElementById('kpiCount').textContent = '49,617';
   document.getElementById('lastUpdate').textContent = 'Refreshed: '+new Date().toLocaleString();
+}
+// ===== KPI Date Range — KPIs only (heading stays July 2024 → today) =====
+function getKpiFilteredTotals(from, to){
+  var fromYm = from.slice(0,7), toYm = to.slice(0,7);
+  // Full = 2024-07-01 → today (shows summary totals to match screenshot)
+  if(from==="2024-07-01" && (to==="2026-09-21" || to>= "2026-08-31")){
+    var tot = rawData.summary;
+    // if range covers all available monthly buckets (2026-07, 2026-08) we return summary
+    var hasFull = rawData.monthly && rawData.monthly["2026-07"] && rawData.monthly["2026-08"];
+    if(hasFull && fromYm <= "2026-07" && toYm >= "2026-08") {
+      return {cogs: tot.reduce((s,x)=>s+x.cogs,0), rm: tot.reduce((s,x)=>s+x.rmCons,0), pm: tot.reduce((s,x)=>s+x.pmCons,0), txn: 49617, months: Object.keys(rawData.monthly)};
+    }
+  }
+  if(!rawData.monthly) {
+    var t = rawData.summary;
+    return {cogs: t.reduce((s,x)=>s+x.cogs,0), rm: t.reduce((s,x)=>s+x.rmCons,0), pm: t.reduce((s,x)=>s+x.pmCons,0), txn: 49617, months: []};
+  }
+  var c=0, months=[];
+  for(var k in rawData.monthly){
+    if(k >= fromYm && k <= toYm){ months.push(k);
+      var bucket = rawData.monthly[k];
+      for(var sbu in bucket){ var arr = bucket[sbu]; if(arr && arr.length) c += Number(arr[0]||0); }
+    }
+  }
+  // RM/PM/Txn scaled proportionally from full summary (since monthly RM buckets not directly mapped)
+  var fullCogs = rawData.summary.reduce((s,x)=>s+x.cogs,0);
+  var fullRm = rawData.summary.reduce((s,x)=>s+x.rmCons,0);
+  var fullPm = rawData.summary.reduce((s,x)=>s+x.pmCons,0);
+  var ratio = fullCogs ? (c / fullCogs) : 0;
+  if(months.length===0) ratio = 0;
+  // if no monthly match (e.g., picking 2024), keep 0 to show no data — user sees filtered empty
+  return {cogs: c, rm: Math.round(fullRm * ratio), pm: Math.round(fullPm * ratio), txn: Math.round(49617 * ratio), months: months};
+}
+function applyKpiDateFilter(){
+  var fromEl=document.getElementById('kpiFrom'), toEl=document.getElementById('kpiTo');
+  var from=fromEl.value, to=toEl.value;
+  if(!from||!to||from>to){ alert('Please pick valid From ≤ To'); return; }
+  var r=getKpiFilteredTotals(from,to);
+  document.getElementById('kpiCogs').textContent = fmt(r.cogs)+' BDT';
+  document.getElementById('kpiRm').textContent = fmt(r.rm)+' BDT';
+  document.getElementById('kpiPm').textContent = fmt(r.pm)+' BDT';
+  document.getElementById('kpiCount').textContent = r.txn.toLocaleString();
+  var isFull = (from==="2024-07-01" && to==="2026-09-21");
+  document.getElementById('kpiRangeNote').innerHTML = 'Showing: <b>'+from+' → '+to+'</b>' + (isFull ? ' (Full)' : ' — KPIs filtered' + (r.months.length?' ('+r.months.length+' months)':''));
+  document.querySelectorAll('#kpiRow .card').forEach(function(el){ el.style.borderColor = isFull ? 'var(--border)' : 'var(--accent)'; el.style.boxShadow = isFull ? 'var(--shadow)' : '0 0 0 2px var(--accent-light)'; });
+  try{ localStorage.setItem('kpiDateFrom', from); localStorage.setItem('kpiDateTo', to); }catch(e){}
+}
+function resetKpiDateFilter(){
+  document.getElementById('kpiFrom').value="2024-07-01";
+  document.getElementById('kpiTo').value="2026-09-21";
+  document.getElementById('kpiPreset').value="full";
+  applyKpiDateFilter();
+}
+function initKpiDateBar(){
+  var f=document.getElementById('kpiFrom'), t=document.getElementById('kpiTo'), p=document.getElementById('kpiPreset');
+  if(!f||!t||!p) return;
+  try{ var sf=localStorage.getItem('kpiDateFrom'), st=localStorage.getItem('kpiDateTo'); if(sf) f.value=sf; if(st) t.value=st; }catch(e){}
+  var today="2026-09-21";
+  f.max=today; t.max=today; f.min="2024-07-01"; t.min="2024-07-01";
+  p.onchange=function(){
+    var v=p.value;
+    if(v==="full"){ f.value="2024-07-01"; t.value=today; }
+    else if(v==="30d"){ f.value="2026-08-22"; t.value=today; }
+    else if(v==="3m"){ f.value="2026-06-22"; t.value=today; }
+    else if(v==="aug"){ f.value="2026-08-01"; t.value="2026-08-31"; }
+    else if(v==="jul"){ f.value="2026-07-01"; t.value="2026-07-31"; }
+    applyKpiDateFilter();
+  };
+  f.onchange=function(){ p.value="full"; };
+  t.onchange=function(){ p.value="full"; };
+  applyKpiDateFilter();
 }
 
 // ===== CHARTS =====
@@ -1675,6 +1762,7 @@ function init() {
   initSlobIbos();
   // Both-Toggle frame init — sync pills/hints
   try{ setSlobView(slobView); }catch(e){}
+  try{ initKpiDateBar(); }catch(e){}
   // keep subtitle date evergreen (July 2024 – today) so auto-refreshes always show current date
   var subEl = document.getElementById('subtitleRange');
   if (subEl) { var dd=new Date(); var mms=["January","February","March","April","May","June","July","August","September","October","November","December"]; subEl.textContent = "Raw Material & Packaging Material | 10 SBUs | July 2024 – " + mms[dd.getMonth()] + " " + dd.getDate() + ", " + dd.getFullYear(); }
