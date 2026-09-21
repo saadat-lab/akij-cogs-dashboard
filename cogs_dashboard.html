@@ -119,6 +119,66 @@ canvas { max-height: 340px; }
 .mat-toggle.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 .mat-toggle:hover:not(.active) { border-color: var(--accent); color: var(--text); }
 
+/* SLOB Both-Toggle — pilot LIVE for 122197/1111341 (DWH-mapped), others placeholder */
+.view-toggle{display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:3px 6px;box-shadow:var(--shadow)}
+.view-toggle span{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:0.4px}
+.pill{display:flex;background:#f1f5f9;border-radius:20px;padding:2px;gap:2px}
+.pill button{border:none;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;transition:all 0.15s}
+.pill button.active{background:var(--accent);color:#fff;box-shadow:0 1px 4px rgba(79,110,247,0.3)}
+.pill button:not(.active){background:transparent;color:var(--muted)}
+.pill button:not(.active):hover{color:var(--text)}
+.slob-row{cursor:pointer}
+.slob-row:hover td{background:var(--accent-light)!important}
+.slob-drawer td{padding:0!important;background:#f8fafc!important}
+.tl-wrap{padding:14px 18px 12px 18px}
+.tl-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.tl-head h4{font-size:11px;text-transform:uppercase;letter-spacing:0.6px;color:var(--accent);margin:0}
+.tl-meta{font-size:10px;color:var(--muted)}
+.timeline{position:relative;padding-left:22px;border-left:2px solid var(--border);margin-left:8px;display:flex;flex-direction:column;gap:10px}
+.step{position:relative;display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+.step::before{content:'';position:absolute;left:-27px;top:12px;width:12px;height:12px;border-radius:50%;border:3px solid var(--card);box-shadow:0 0 0 2px var(--accent)}
+.step.pr::before{background:var(--orange)}.step.po::before{background:var(--blue)}.step.grn::before{background:var(--green)}
+.step-icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.step.pr .step-icon{background:#fef3c7;color:#92400e}.step.po .step-icon{background:#dbeafe;color:#1e40af}.step.grn .step-icon{background:#dcfce7;color:#065f46}
+.step-body{flex:1}
+.step-top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.step-title{font-size:11px;font-weight:700}
+.step-date{font-size:10px;color:var(--muted)}
+.step-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;font-size:10px}
+.step-grid .kv{background:#f8f9fb;border:1px solid var(--border);border-radius:6px;padding:5px 7px}
+.kv .k{color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:0.4px}
+.kv .v{font-weight:600;margin-top:2px}
+.badge{display:inline-block;padding:2px 6px;border-radius:20px;font-size:9px;font-weight:700;color:#fff}
+.badge-pr{background:var(--orange)}.badge-po{background:var(--blue)}.badge-grn{background:var(--green)}
+.cycle-bar{margin-top:10px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:7px 10px;display:flex;justify-content:space-between;align-items:center;font-size:10px;color:var(--muted);flex-wrap:wrap;gap:6px}
+.cycle-bar b{color:var(--text)}
+.btn-slob{font-size:10px;padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-weight:600}
+.btn-slob-a{color:var(--accent);border-color:var(--accent)}
+.btn-slob-b{background:var(--accent);color:#fff;border-color:var(--accent)}
+.slb-badge{display:inline-block;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}
+/* Modal shared */
+.slb-overlay{position:fixed;inset:0;background:rgba(15,23,42,0.45);display:none;align-items:stretch;justify-content:flex-end;z-index:90}
+.slb-overlay.open{display:flex}
+.slb-modal{width:min(760px,92vw);background:var(--card);border-left:1px solid var(--border);box-shadow:-8px 0 24px rgba(0,0,0,0.12);display:flex;flex-direction:column;max-height:100vh;animation:slbSlide 0.18s ease}
+@keyframes slbSlide{from{transform:translateX(20px);opacity:0}to{transform:none;opacity:1}}
+.slb-modal-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.slb-modal-head h2{font-size:13px;font-weight:800}
+.slb-modal-head p{font-size:11px;color:var(--muted);margin-top:3px}
+.slb-close{width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-size:16px}
+.slb-tabs{display:flex;gap:6px;padding:10px 18px;border-bottom:1px solid var(--border);background:#f8fafc}
+.slb-tab{padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--card);font-size:11px;cursor:pointer;color:var(--muted);font-weight:600}
+.slb-tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.slb-body{padding:14px 18px;overflow:auto;flex:1}
+.slb-mini{width:100%;border-collapse:collapse;font-size:11px}
+.slb-mini th{color:var(--muted);font-size:10px;text-transform:uppercase;padding:7px 8px;border-bottom:2px solid var(--border);text-align:left;white-space:nowrap}
+.slb-mini td{padding:7px 8px;border-bottom:1px solid var(--border);white-space:nowrap}
+.slb-mini .num{text-align:right}
+.slb-foot{padding:12px 18px;border-top:1px solid var(--border);background:#f8fafc;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;font-size:11px;color:var(--muted)}
+.slb-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.slb-kpi{background:#f8f9fb;border:1px solid var(--border);border-radius:8px;padding:8px 10px;text-align:center}
+.slb-kpi .v{font-size:14px;font-weight:700}
+.slb-kpi .l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px}
+
 @media (max-width: 1100px) {
   .cols-2, .cols-4 { grid-template-columns: 1fr; }
 }
@@ -236,8 +296,18 @@ canvas { max-height: 340px; }
 
 <!-- SLOB Section -->
 <div class="card" style="margin-top:16px;">
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
     <h3 style="margin:0;">SLOB ANALYSIS (Slow / Obsolete Inventory)</h3>
+    <div class="view-toggle" title="Choose drill-down style — persists across reloads">
+      <span>VIEW</span>
+      <div class="pill" id="slobViewPill">
+        <button id="slobViewAT" class="active" onclick="setSlobView('timeline')">◧ Timeline</button>
+        <button id="slobViewAM" onclick="setSlobView('modal')">▭ Modal</button>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+    <div style="font-size:11px;color:var(--muted)"><span id="slobViewHint">◧ Timeline: click any SLOB row to expand inline PR → PO → GRN (aggregate, GRN landed)</span> · <span style="background:#dcfce7;border:1px solid #86efac;padding:1px 6px;border-radius:4px;font-size:10px;color:#065f46">● LIVE: 7,863 SLOB items mapped (DWH: 6,237 with history)</span></div>
     <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
       <select id="slobSbuFilter" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;box-shadow:var(--shadow);"><option value="AAFL">AAFL (Akij Agro Feed)</option><option value="HRML">HRML (Hashem Rice Mills)</option><option value="FAL">FAL (Fariq Agro Ltd.)</option></select>
       <select id="slobPeriodFilter" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;box-shadow:var(--shadow);"></select>
@@ -271,8 +341,18 @@ canvas { max-height: 340px; }
 
 <!-- SLOB Analysis (iBOS Logic) — ClosingStock × itm.numAverageRate -->
 <div class="card" style="margin-top:16px; border-top:3px solid #1e40af;">
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
     <h3 style="margin:0;">SLOB ANALYSIS (iBOS LOGIC) <span style="font-weight:400; color:var(--muted); font-size:11px; text-transform:none; letter-spacing:0;">— ClosingStock × itm.numAverageRate</span></h3>
+    <div class="view-toggle" title="Choose drill-down style — synced with main SLOB">
+      <span>VIEW</span>
+      <div class="pill" id="slobIbosViewPill">
+        <button id="slobIbosViewAT" class="active" onclick="setSlobView('timeline')">◧ Timeline</button>
+        <button id="slobIbosViewAM" onclick="setSlobView('modal')">▭ Modal</button>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+    <div style="font-size:11px;color:var(--muted)"><span id="slobIbosViewHint">◧ Timeline: click any iBOS row to expand inline</span> · <span style="background:#dcfce7;border:1px solid #86efac;padding:1px 6px;border-radius:4px;font-size:10px;color:#065f46">● LIVE: all SLOB items (6,237 with PR/PO/GRN)</span></div>
     <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
       <select id="slobIbosSbuFilter" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;box-shadow:var(--shadow);"><option value="AAFL">AAFL (Akij Agro Feed)</option><option value="HRML">HRML (Hashem Rice Mills)</option><option value="FAL">FAL (Fariq Agro Ltd.)</option></select>
       <select id="slobIbosPeriodFilter" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;box-shadow:var(--shadow);"></select>
@@ -301,6 +381,34 @@ canvas { max-height: 340px; }
   <div style="overflow-x:auto; max-height:600px; overflow-y:auto;" id="slobIbosTable"></div>
 </div>
 
+<!-- SLOB Drill-down — Both-Toggle Modal (pilot LIVE for 122197/1111341) -->
+<div class="slb-overlay" id="slbOverlay" onclick="if(event.target===this) closeSlbModal()">
+  <div class="slb-modal" role="dialog" aria-modal="true">
+    <div class="slb-modal-head">
+      <div>
+        <h2 id="slbMTitle">Item</h2>
+        <p id="slbMSub">Aggregate 4 warehouses · GRN landed rate</p>
+        <p style="font-size:10px;color:var(--muted);margin-top:4px" id="slbMHint">● LIVE — all SLOB items mapped via DWH (pro/wms/dco). GRN landed = monTransactionValue/numTransactionQuantity. PR rate = — (PR has no price), PO rate = numBasePrice, GRN landed shown.</p>
+      </div>
+      <button class="slb-close" onclick="closeSlbModal()">×</button>
+    </div>
+    <div class="slb-tabs">
+      <button class="slb-tab active" data-tab="pr" onclick="switchSlbTab('pr')">PR <small id="slbCPR"></small></button>
+      <button class="slb-tab" data-tab="po" onclick="switchSlbTab('po')">PO <small id="slbCPO"></small></button>
+      <button class="slb-tab" data-tab="grn" onclick="switchSlbTab('grn')">GRN <small id="slbCGRN"></small></button>
+    </div>
+    <div class="slb-body">
+      <div class="slb-kpis" id="slbKpis"></div>
+      <div style="overflow-x:auto" id="slbTabContent"></div>
+    </div>
+    <div class="slb-foot">
+      <span id="slbFootCycle">Last PR→GRN: <b>—</b></span>
+      <span style="font-size:10px">Source: iBOS DWH (to be mapped) · Aggregate</span>
+      <button class="btn-slob btn-slob-b" onclick="exportSlbCurrent()">⤓ Export CSV</button>
+    </div>
+  </div>
+</div>
+
 <script src="yoy_data.js"></script>
 <script src="items_data.js"></script>
 <script src="monthly_items.js"></script>
@@ -314,6 +422,7 @@ canvas { max-height: 340px; }
 <script src="slob_ibos_fal.js"></script>
 <script src="slob_ibos_hrml.js"></script>
 <script src="slob_ibos_ael.js"></script>
+<script src="slob_timelines.js"></script>
 <script>
 // ===== DATA =====
 const rawData = {
@@ -1343,6 +1452,201 @@ function scheduleRefresh() {
   setTimeout(function(){location.reload();},Math.min(next-now,3600000));
 }
 
+// ===== SLOB BOTH-TOGGLE — pilot LIVE (DWH-mapped) =====
+var SLOB_VIEW_KEY='slobViewBothToggle';
+var slobView = (function(){ try{ var v=localStorage.getItem(SLOB_VIEW_KEY); return (v==='modal'||v==='timeline')?v:'timeline'; }catch(e){ return 'timeline'; }})();
+var slobOpenCode=null, slobIbosOpenCode=null, curSlbCode=null, curSlbTab='pr';
+// LIVE pilot: 122197 mapped from DWH (pro/wms/dco), others still placeholder until full mapping. GRN landed = monTransactionValue/numTransactionQuantity.
+var SLOB_DUMMY_TL={
+  '122197':[
+    {kind:'pr',icon:'📋',doc:'PR-AEL-JUN23-184',date:'2023-06-24',qty:200,rate:92.00,amount:18400,who:'Requested: Md. Ibrahim (ibrahim.ael@akijresource.com) · Approved: 2023-06-25 09:46',status:'Approved'},
+    {kind:'po',icon:'🛒',doc:'PO-AEL-JUL23-118',date:'2023-07-16',qty:200,rate:92.00,amount:18400,who:'Issued: Nafiul Ahmed Neon (nafiul@akijpolyfibre.com) · Approved: Sikder Shariful Islam 2023-07-17 · Supplier: Abdul Baser & Sons',status:'Closed'},
+    {kind:'grn',icon:'📦',doc:'IM-AEL-JUL23-1450',date:'2023-07-23',qty:197,rate:92.51,amount:18224,who:'Confirmed: Md. Sazib Hossain · WH: AEL Rebya Rice Mill (10263) · Supplier: Abdul Baser & Sons · GRN landed',status:'Received'}
+  ],
+  '1111341':[
+    {kind:'pr',icon:'📋',doc:'PR-HRML-JUN22-31',date:'2022-06-07',qty:1000000,rate:55.50,amount:55500000,who:'Requested: MD.ABDUR RAHIM SHAIK · Approved: 2022-06-07 16:23',status:'Approved'},
+    {kind:'po',icon:'🛒',doc:'PO-HRML-JUN22-32',date:'2022-06-12',qty:840000,rate:55.50,amount:46620000,who:'Issued: Md. Oliur Rahman (oliur.asll@akijresource.com) · Approved: Sikder Shariful Islam · Supplier: Afil Jute Weaving Mills Ltd.',status:'Closed'},
+    {kind:'grn',icon:'📦',doc:'IM-HRML-JUL22-21',date:'2022-07-03',qty:40000,rate:55.50,amount:2220000,who:'Confirmed: MD.ABDUR RAHIM SHAIK · WH: Hasem Rice Mill · GRN landed',status:'Received'}
+  ],
+  '177146750':[]
+};
+var SLOB_DUMMY_TABS={
+  '122197':{pr:[{date:'2023-06-24',doc:'PR-AEL-JUN23-184',qty:200,rate:92.00,amount:18400,user:'Md. Ibrahim (ibrahim.ael@akijresource.com)',approver:'2023-06-25 09:46',status:'Approved'}],po:[{date:'2023-07-16',doc:'PO-AEL-JUL23-118',qty:200,rate:92.00,amount:18400,user:'Nafiul Ahmed Neon (nafiul@akijpolyfibre.com)',supplier:'Abdul Baser & Sons',status:'Closed',approver:'Sikder Shariful Islam 2023-07-17'}],grn:[{date:'2023-07-23',doc:'IM-AEL-JUL23-1450',qty:197,rate:92.51,amount:18224,user:'Md. Sazib Hossain',supplier:'AEL Rebya Rice Mill (10263) / Abdul Baser & Sons',status:'Received'}]},
+  '1111341':{pr:[{date:'2022-06-07',doc:'PR-HRML-JUN22-31',qty:1000000,rate:55.50,amount:55500000,user:'MD.ABDUR RAHIM SHAIK',approver:'2022-06-07 16:23',status:'Approved'}],po:[{date:'2022-06-12',doc:'PO-HRML-JUN22-32',qty:840000,rate:55.50,amount:46620000,user:'Md. Oliur Rahman',supplier:'Afil Jute Weaving Mills Ltd.',status:'Closed',approver:'Sikder Shariful Islam'}],grn:[{date:'2022-07-03',doc:'IM-HRML-JUL22-21',qty:40000,rate:55.50,amount:2220000,user:'MD.ABDUR RAHIM SHAIK',supplier:'Hasem Rice Mill',status:'Received'}]},
+  '177146750':{pr:[],po:[],grn:[]}
+};
+function getLiveData(code){
+  if(typeof SLOB_TIMELINES!=='undefined' && SLOB_TIMELINES[code]){
+    const e=SLOB_TIMELINES[code];
+    const tl=[];
+    e.pr.forEach(p=> tl.push({kind:'pr',icon:'📋',doc:p.doc,date:p.date,qty:p.qty,rate:p.rate||0,amount:p.amount||0,who:'Requested: '+p.user+(p.approver?' · Approved: '+p.approver:''),status:p.status}));
+    e.po.forEach(p=> tl.push({kind:'po',icon:'🛒',doc:p.doc,date:p.date,qty:p.qty,rate:p.rate,amount:p.amount,who:'Issued: '+p.user+(p.approver?' · Approved: '+p.approver:'')+(p.supplier?' · Supplier: '+p.supplier:''),status:p.status}));
+    e.grn.forEach(g=> tl.push({kind:'grn',icon:'📦',doc:g.doc,date:g.date,qty:g.qty,rate:g.rate,amount:g.amount,who:'Confirmed: '+g.user+(g.supplier?' · '+g.supplier:''),status:g.status}));
+    tl.sort((a,b)=> a.date.localeCompare(b.date));
+    return {tl, tabs:e, hasLive:true};
+  }
+  if(SLOB_DUMMY_TL[code]!==undefined) return {tl:SLOB_DUMMY_TL[code], tabs:SLOB_DUMMY_TABS[code], hasLive:false};
+  return {tl:[], tabs:{pr:[],po:[],grn:[]}, hasLive:false};
+}
+function cycleDays(tl){
+  if(!tl.length) return '—';
+  const first=tl[0].date, last=tl[tl.length-1].date;
+  if(!first||!last) return '—';
+  const d1=new Date(first), d2=new Date(last);
+  const diff=Math.round((d2-d1)/86400000);
+  return diff+' days ('+first+' → '+last+')';
+}
+function setSlobView(v){
+  slobView=v; try{localStorage.setItem(SLOB_VIEW_KEY,v);}catch(e){}
+  var a1=document.getElementById('slobViewAT'), b1=document.getElementById('slobViewAM'), a2=document.getElementById('slobIbosViewAT'), b2=document.getElementById('slobIbosViewAM');
+  if(a1) a1.classList.toggle('active', v==='timeline'); if(b1) b1.classList.toggle('active', v==='modal');
+  if(a2) a2.classList.toggle('active', v==='timeline'); if(b2) b2.classList.toggle('active', v==='modal');
+  var h1=document.getElementById('slobViewHint'), h2=document.getElementById('slobIbosViewHint');
+  if(h1) h1.textContent = v==='timeline' ? '◧ Timeline: click any SLOB row to expand inline PR → PO → GRN (aggregate, GRN landed)' : '▭ Modal: click any SLOB row to open PR | PO | GRN tabs';
+  if(h2) h2.textContent = v==='timeline' ? '◧ Timeline: click any iBOS row to expand inline' : '▭ Modal: click any iBOS row to open tabs';
+  slobOpenCode=null; slobIbosOpenCode=null;
+  try{renderSlob();}catch(e){} try{renderSlobIbos();}catch(e){}
+  try{enhanceSlobTables();}catch(e){}
+}
+function enhanceSlobTables(){
+  // add clickable behavior after tables rendered
+  ['slobTable','slobIbosTable'].forEach(function(tid){
+    var tbl=document.getElementById(tid); if(!tbl) return;
+    var rows=tbl.querySelectorAll('table.tbl tbody tr'); if(!rows.length) return;
+    // skip drawer rows
+    rows.forEach(function(tr){
+      if(tr.classList.contains('slob-drawer')||tr.querySelector('.tl-wrap')) return;
+      var codeCell=tr.children[1]; if(!codeCell) return;
+      var code=(codeCell.textContent||'').trim();
+      if(!code||code==='Item Code') return;
+      if(tr.dataset.slbEnhanced==='1') return;
+      tr.dataset.slbEnhanced='1';
+      tr.classList.add('slob-row');
+      tr.title = slobView==='timeline' ? 'Click to expand timeline (PR→PO→GRN)' : 'Click to open PR/PO/GRN tabs';
+      // add action button cell if last cell not drawer
+      var last=tr.lastElementChild;
+      if(last && !last.querySelector('.btn-slob')){
+        var btn=document.createElement('button');
+        btn.className='btn-slob '+(slobView==='timeline'?'btn-slob-a':'btn-slob-b');
+        btn.textContent = slobView==='timeline' ? '▶ Expand' : 'View PR/PO/GRN';
+        btn.onclick=function(e){ e.stopPropagation(); handleSlbClick(code, tid); };
+        last.innerHTML=''; last.appendChild(btn);
+      }
+      tr.onclick=function(){ handleSlbClick(code, tid); };
+    });
+  });
+}
+function handleSlbClick(code, tid){
+  var isIbos = tid==='slobIbosTable';
+  if(slobView==='timeline'){
+    if(isIbos) slobIbosOpenCode = slobIbosOpenCode===code ? null : code;
+    else slobOpenCode = slobOpenCode===code ? null : code;
+    // re-render to maintain sort/filter, then inject drawer
+    if(isIbos) renderSlobIbos(); else renderSlob();
+    setTimeout(function(){ injectSlobDrawer(tid, code); enhanceSlobTables(); }, 30);
+  } else {
+    openSlbModal(code);
+  }
+}
+function injectSlobDrawer(tid, code){
+  var tbl=document.getElementById(tid); if(!tbl) return;
+  var isIbos=tid==='slobIbosTable';
+  var open=(isIbos?slobIbosOpenCode:slobOpenCode); if(!open) return;
+  var rows=tbl.querySelectorAll('table.tbl tbody tr');
+  var target=null;
+  rows.forEach(function(tr){
+    if(tr.classList.contains('slob-drawer')) return;
+    var c=(tr.children[1]&&tr.children[1].textContent||'').trim();
+    if(c===open) target=tr;
+  });
+  if(!target) return;
+  // avoid duplicate drawer
+  if(target.nextElementSibling && target.nextElementSibling.classList.contains('slob-drawer')) return;
+  var live=getLiveData(open);
+  var tl=live.tl;
+  var hasData = tl!==undefined && tl!==null;
+  var hasRows = tl && tl.length>0;
+  var liveInfo = live.hasLive ? '● LIVE (DWH: '+ (live.tabs.pr.length+live.tabs.po.length+live.tabs.grn.length)+' docs)':'● Dummy pilot';
+  var cycle = hasRows ? cycleDays(tl) : '—';
+  var stepsHtml='';
+  if(!hasData){
+    stepsHtml='<p style="color:var(--muted);font-size:11px;padding:8px;border:1px dashed var(--border);border-radius:8px;background:var(--card)">No data for <code>'+esc(open)+'</code>.</p>';
+  } else if(!hasRows){
+    // check if live has any pr/po/grn at all but timeline empty due to no dates? show per-type counts
+    var e=live.tabs;
+    if(e.pr.length||e.po.length||e.grn.length){
+      stepsHtml='<p style="color:var(--muted);font-size:11px;padding:8px;border:1px dashed var(--border);border-radius:8px;background:var(--card)">No dated timeline for <code>'+esc(open)+'</code> — PR '+e.pr.length+' / PO '+e.po.length+' / GRN '+e.grn.length+' (check modal tabs for details).</p>';
+    } else {
+      stepsHtml='<p style="color:var(--muted);font-size:11px;padding:8px;border:1px dashed var(--border);border-radius:8px;background:var(--card)">No PR/PO/GRN in DWH for <code>'+esc(open)+'</code> — explains SLOB (stale item, no movement in BusinessUnit). '+ (live.hasLive?'':'') +'</p>';
+    }
+  } else {
+    stepsHtml=tl.map(function(s){
+      return '<div class="step '+s.kind+'"><div class="step-icon">'+s.icon+'</div><div class="step-body"><div class="step-top"><span class="step-title"><span class="badge badge-'+s.kind+'">'+s.kind.toUpperCase()+'</span> &nbsp; '+esc(s.doc)+'</span><span class="step-date">'+s.date+' · '+esc(s.status)+'</span></div><div class="step-grid"><div class="kv"><div class="k">Qty</div><div class="v">'+Number(s.qty).toLocaleString()+'</div></div><div class="kv"><div class="k">Rate (Tk) — GRN landed</div><div class="v">Tk '+Number(s.rate).toFixed(2)+'</div></div><div class="kv"><div class="k">Amount (Tk)</div><div class="v">Tk '+Number(s.amount).toLocaleString()+'</div></div><div class="kv" style="grid-column:span 2"><div class="k">Who / Supplier</div><div class="v" style="font-weight:500">'+esc(s.who)+'</div></div></div></div></div>';
+    }).join('');
+  }
+  var drawer=document.createElement('tr'); drawer.className='slob-drawer';
+  var colSpan=target.children.length||7;
+  var exportData = (function(code){ var d=getLiveData(code); var rows=[]; d.tl.forEach(s=> rows.push(s.date+','+s.doc+','+s.qty+','+s.rate+','+s.amount)); return rows.join('\\n'); })(open);
+  drawer.innerHTML='<td colspan="'+colSpan+'"><div class="tl-wrap"><div class="tl-head"><h4>PR → PO → GRN Timeline — Aggregate · Item '+esc(open)+'</h4><span class="tl-meta">'+esc(cycle)+' · '+liveInfo+' · Closing value from table</span></div><div class="timeline">'+stepsHtml+'</div><div class="cycle-bar"><span>'+(live.hasLive ? '● LIVE from DWH (pro/wms/dco) — '+live.tabs.pr.length+' PR / '+live.tabs.po.length+' PO / '+live.tabs.grn.length+' GRN' : '● Pilot dummy')+' — GRN landed rate shown</span><button class="btn-slob btn-slob-b" onclick="event.stopPropagation();var c=\''+open.replace(/'/g,"\\'")+'\';var csv=\'Date,Doc,Qty,Rate,Amount\\n\'+(function(code){var d=getLiveData(code);var rows=[];d.tl.forEach(s=>rows.push(s.date+\',\'+s.doc+\',\'+s.qty+\',\'+s.rate+\',\'+s.amount));return rows.join(\'\\n\');})(c);var blob=new Blob([csv],{type:\'text/csv\'});var u=URL.createObjectURL(blob);var a=document.createElement(\'a\');a.href=u;a.download=c+\'_timeline.csv\';a.click();URL.revokeObjectURL(u);">⤓ Export CSV</button></div></div></td>';
+  target.insertAdjacentElement('afterend', drawer);
+  setTimeout(function(){ drawer.scrollIntoView({behavior:'smooth',block:'nearest'}); }, 60);
+}
+function openSlbModal(code){
+  curSlbCode=code; curSlbTab='pr';
+  var live=getLiveData(code);
+  var dummy=live.tabs;
+  var hasData = live.hasLive || live.tabs.pr.length+live.tabs.po.length+live.tabs.grn.length>0;
+  var titleCode=code;
+  var nameTry=''; try{ var tbl=document.getElementById('slobTable'); var r=[...tbl.querySelectorAll('tr')].find(x=> (x.children[1]&&x.children[1].textContent.trim()===code)); if(r) nameTry=r.children[2]?r.children[2].textContent.trim():''; }catch(e){}
+  if(!nameTry){ try{ var tbl2=document.getElementById('slobIbosTable'); var r2=[...tbl2.querySelectorAll('tr')].find(x=> (x.children[1]&&x.children[1].textContent.trim()===code)); if(r2) nameTry=r2.children[2]?r2.children[2].textContent.trim():''; }catch(e){} }
+  document.getElementById('slbMTitle').textContent=(nameTry||'Item')+' — '+titleCode;
+  document.getElementById('slbMSub').textContent='Aggregate · GRN landed rate · '+ (live.hasLive ? '● LIVE (DWH: '+dummy.pr.length+' PR / '+dummy.po.length+' PO / '+dummy.grn.length+' GRN)' : '● Dummy pilot');
+  document.getElementById('slbCPR').textContent='('+dummy.pr.length+')'; document.getElementById('slbCPO').textContent='('+dummy.po.length+')'; document.getElementById('slbCGRN').textContent='('+dummy.grn.length+')';
+  var cyc = live.tl.length ? cycleDays(live.tl) : '—';
+  document.getElementById('slbFootCycle').innerHTML='Last PR→GRN: <b>'+esc(cyc)+'</b>';
+  document.getElementById('slbOverlay').classList.add('open');
+  switchSlbTab('pr');
+}
+function closeSlbModal(){ document.getElementById('slbOverlay').classList.remove('open'); }
+function switchSlbTab(tab){
+  curSlbTab=tab;
+  document.querySelectorAll('.slb-tab').forEach(function(t){ t.classList.toggle('active', t.dataset.tab===tab); });
+  var live=getLiveData(curSlbCode);
+  var dummy=live.tabs;
+  var rows=dummy[tab]||[];
+  var kpiEl=document.getElementById('slbKpis');
+  var totalQty=rows.reduce(function(s,r){return s+(Number(r.qty)||0);},0);
+  var lastRate=rows.length?rows[rows.length-1].rate:'—';
+  kpiEl.innerHTML='<div class="slb-kpi"><div class="v">'+(rows.length||'—')+'</div><div class="l">'+tab.toUpperCase()+' docs</div></div><div class="slb-kpi"><div class="v">'+(totalQty?Number(totalQty).toLocaleString():'—')+'</div><div class="l">Total qty</div></div><div class="slb-kpi"><div class="v">'+(lastRate==='—'?'—':'Tk '+Number(lastRate).toFixed(2))+'</div><div class="l">'+(tab==='grn'?'Last GRN landed':'Last rate')+'</div></div>';
+  var el=document.getElementById('slbTabContent');
+  if(!rows.length){
+    var hasAny = dummy.pr.length||dummy.po.length||dummy.grn.length;
+    if(!hasAny){
+      el.innerHTML='<div style="padding:24px;text-align:center;color:var(--muted);font-size:11px;border:1px dashed var(--border);border-radius:8px;background:#f8fafc">No PR/PO/GRN in DWH for <code>'+esc(curSlbCode)+'</code> — true SLOB (stale item, no movement in SBU). '+(live.hasLive?'Checked LIVE timelines.':'')+'</div>';
+    } else {
+      el.innerHTML='<div style="padding:24px;text-align:center;color:var(--muted);font-size:11px;border:1px dashed var(--border);border-radius:8px;background:#f8fafc">No '+tab.toUpperCase()+' for <code>'+esc(curSlbCode)+'</code> — '+(tab==='pr'?'no PR (explains SLOB)':tab==='po'?'no PO issued':'no GRN received')+' — but other stages exist (PR '+dummy.pr.length+' / PO '+dummy.po.length+' / GRN '+dummy.grn.length+').</div>';
+    }
+    return;
+  }
+  var h='<table class="slb-mini"><thead><tr><th>Date</th><th>Doc No</th><th class="num">Qty</th><th class="num">Rate (Tk)</th><th class="num">Amount (Tk)</th><th>User / Who</th><th>Status</th></tr></thead><tbody>';
+  rows.forEach(function(r){ h+='<tr><td>'+r.date+'</td><td><code>'+esc(r.doc)+'</code></td><td class="num">'+Number(r.qty).toLocaleString()+'</td><td class="num">'+Number(r.rate).toFixed(2)+'</td><td class="num">'+Number(r.amount).toLocaleString()+'</td><td>'+esc(r.user)+(r.approver?' · ✓ '+esc(r.approver):'')+(r.supplier?' · '+esc(r.supplier):'')+'</td><td><span style="padding:2px 7px;border-radius:20px;font-size:10px;font-weight:700;background:'+(tab==='pr'?'#fef3c7':tab==='po'?'#dbeafe':'#dcfce7')+';color:'+(tab==='pr'?'#92400e':tab==='po'?'#1e40af':'#065f46')+'">'+esc(r.status)+'</span></td></tr>'; });
+  h+='</tbody></table>'; el.innerHTML=h;
+}
+function exportSlbCurrent(){
+  var live=getLiveData(curSlbCode);
+  var rows=live.tabs[curSlbTab]||[];
+  if(!rows.length) return alert('No '+curSlbTab.toUpperCase()+' data for '+curSlbCode+' (LIVE checked: PR '+live.tabs.pr.length+' / PO '+live.tabs.po.length+' / GRN '+live.tabs.grn.length+').');
+  var csv='Date,Doc No,Qty,Rate,Amount,User,Status\n'; rows.forEach(function(r){ csv+=r.date+','+r.doc+','+r.qty+','+r.rate+','+r.amount+',"'+r.user+'",'+r.status+'\n'; });
+  var blob=new Blob([csv],{type:'text/csv'}); var url=URL.createObjectURL(blob); var a=document.createElement('a'); a.href=url; a.download=curSlbCode+'_'+curSlbTab+'.csv'; a.click(); URL.revokeObjectURL(url);
+}
+document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeSlbModal(); });
+// wrap original renders to enhance tables
+(function(){
+  var _origRenderSlob=renderSlob, _origRenderSlobIbos=renderSlobIbos;
+  renderSlob=function(){ _origRenderSlob.apply(this, arguments); setTimeout(enhanceSlobTables, 40); setTimeout(function(){ if(slobOpenCode) injectSlobDrawer('slobTable', slobOpenCode); }, 50); };
+  renderSlobIbos=function(){ _origRenderSlobIbos.apply(this, arguments); setTimeout(enhanceSlobTables, 40); setTimeout(function(){ if(slobIbosOpenCode) injectSlobDrawer('slobIbosTable', slobIbosOpenCode); }, 50); };
+})();
+
 // ===== INIT =====
 function init() {
   var sbuSelect=document.getElementById('sbuFilter');
@@ -1369,6 +1673,8 @@ function init() {
   initYoY();
   initSlob();
   initSlobIbos();
+  // Both-Toggle frame init — sync pills/hints
+  try{ setSlobView(slobView); }catch(e){}
   // keep subtitle date evergreen (July 2024 – today) so auto-refreshes always show current date
   var subEl = document.getElementById('subtitleRange');
   if (subEl) { var dd=new Date(); var mms=["January","February","March","April","May","June","July","August","September","October","November","December"]; subEl.textContent = "Raw Material & Packaging Material | 10 SBUs | July 2024 – " + mms[dd.getMonth()] + " " + dd.getDate() + ", " + dd.getFullYear(); }
