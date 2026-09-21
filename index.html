@@ -193,18 +193,14 @@ canvas { max-height: 340px; }
 <!-- AI Insights -->
 <div class="insight-box" id="insights"><h3>AI INSIGHTS</h3><div id="insights-content"></div></div>
 
-<!-- Filters -->
-<div class="filter-bar">
+<!-- Filters + KPI Date Range INLINE (combined, uses empty space) -->
+<div class="filter-bar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
   <select id="sbuFilter" onchange="applyFilters()"><option value="all">All SBUs</option></select>
   <select id="materialFilter" onchange="applyFilters()"><option value="all">All Materials</option><option value="Raw Material">Raw Material</option><option value="Packaging Material">Packaging Material</option></select>
   <select id="viewMode" onchange="applyFilters()"><option value="consumption">Consumption Only</option><option value="purchase">Purchase Only</option><option value="cogs">COGS View</option></select>
-  <button onclick="resetFilters()">Reset</button>
-  <span style="margin-left:auto;color:var(--muted);font-size:11px;" id="lastUpdate"></span>
-</div>
-
-<!-- KPI Date Range — KPIs only (heading stays July 2024 → today) -->
-<div class="card" id="kpiDateBar" style="padding:10px 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:linear-gradient(135deg,#f0f4ff,#fff);border-color:var(--accent)">
-  <span style="font-size:11px;font-weight:800;color:var(--accent);letter-spacing:0.4px">KPI Date Range</span>
+  <button onclick="resetFilters()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Reset</button>
+  <div style="width:1px;height:24px;background:var(--border);margin:0 6px"></div>
+  <span style="font-size:11px;font-weight:800;color:var(--accent);letter-spacing:0.2px">KPI Date Range</span>
   <label style="font-size:11px;color:var(--muted);font-weight:600">From</label>
   <input type="date" id="kpiFrom" value="2024-07-01" min="2024-07-01" style="border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;background:var(--card)">
   <label style="font-size:11px;color:var(--muted);font-weight:600">To</label>
@@ -218,7 +214,8 @@ canvas { max-height: 340px; }
   </select>
   <button onclick="applyKpiDateFilter()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Apply</button>
   <button onclick="resetKpiDateFilter()" style="background:var(--card);border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:6px 12px;font-size:11px;font-weight:600;cursor:pointer">Reset to Full</button>
-  <span style="margin-left:auto;font-size:11px;color:var(--muted)" id="kpiRangeNote">Showing: <b>2024-07-01 → 2026-09-21 (Full)</b></span>
+  <span style="font-size:11px;color:var(--muted)" id="kpiRangeNote">Showing: <b>2024-07-01 → 2026-09-21 (Full)</b></span>
+  <span style="margin-left:auto;color:var(--muted);font-size:11px;" id="lastUpdate"></span>
 </div>
 
 <!-- KPIs -->
