@@ -863,7 +863,7 @@ function renderItems() {
     if (sbu !== 'all' && i.sbu !== sbu) return false;
     if (selectedMatTypes.indexOf('all') === -1 && selectedMatTypes.indexOf(i.type) === -1) return false;
     if (txn !== 'all' && i.txnType !== txn) return false;
-    if (search && !i.item.toLowerCase().includes(search)) return false;
+    if (search && !i.item.toLowerCase().includes(search) && !String(i.item_code||"").toLowerCase().includes(search)) return false;
     return true;
   });
   
@@ -880,7 +880,7 @@ function renderItems() {
   
   document.getElementById('itemRange').textContent='Showing '+(start+1)+'-'+Math.min(start+pageSize,total)+' of '+total.toLocaleString()+' item rows';
   
-  var h='<table class="tbl"><thead><tr><th>#</th><th>SBU</th><th>Type</th><th>Txn Type</th><th>Item Name</th><th class="num">Value</th><th class="num">Qty</th><th class="num">Rate/Mo</th><th class="num">Txns</th><th></th></tr></thead><tbody>';
+  var h='<table class="tbl"><thead><tr><th>#</th><th>SBU</th><th>Item Code (Sys ID)</th><th>Type</th><th>Txn Type</th><th>Item Name</th><th class="num">Value</th><th class="num">Qty</th><th class="num">Rate/Mo</th><th class="num">Txns</th><th></th></tr></thead><tbody>';
   page.forEach((item,i)=>{
     var key = item.sbu+'|'+item.item+'|'+item.txnType;
     var hasMonthly = typeof MONTHLY_DATA !== 'undefined' && MONTHLY_DATA[key];
@@ -894,7 +894,7 @@ function renderItems() {
       monthlyRate = uniqueMonths > 0 ? totalVal / uniqueMonths : 0;
     }
     
-    h+='<tr id="ir'+(start+i)+'"><td>'+(start+i+1)+'</td><td style="color:'+(sbuColors[item.sbu]||'var(--accent)')+'">'+item.sbu+'</td><td>'+typeTag(item.type)+'</td><td style="font-size:10px;color:var(--muted);">'+item.txnType+'</td><td title="'+item.item+'">'+item.item.substring(0,50)+(item.item.length>50?'...':'')+'</td><td class="num">'+fmt(item.value)+'</td><td class="num">'+(item.qty<0?Math.abs(item.qty).toFixed(2):item.qty)+'</td><td class="num">'+fmt(monthlyRate)+'/mo</td><td class="num">'+item.txn+'</td><td>'+(hasMonthly?'<button class="btn-sm" onclick="toggleMonthly('+(start+i)+',\''+key.replace(/'/g,"\\'")+'\')">Monthly</button>':'')+'</td></tr>';
+    h+='<tr id="ir'+(start+i)+'"><td>'+(start+i+1)+'</td><td style="color:'+(sbuColors[item.sbu]||'var(--accent)')+'">'+item.sbu+'</td><td style="font-size:10px">'+(item.item_code_display||item.item_code||'')+'</td><td>'+typeTag(item.type)+'</td><td style="font-size:10px;color:var(--muted);">'+item.txnType+'</td><td title="'+item.item+'">'+item.item.substring(0,50)+(item.item.length>50?'...':'')+'</td><td class="num">'+fmt(item.value)+'</td><td class="num">'+(item.qty<0?Math.abs(item.qty).toFixed(2):item.qty)+'</td><td class="num">'+fmt(monthlyRate)+'/mo</td><td class="num">'+item.txn+'</td><td>'+(hasMonthly?'<button class="btn-sm" onclick="toggleMonthly('+(start+i)+',\''+key.replace(/'/g,"\\'")+'\')">Monthly</button>':'')+'</td></tr>';
   });
   h+='</tbody></table>';
   document.getElementById('itemsTable').innerHTML = h;
@@ -1091,7 +1091,7 @@ function renderYoY() {
     if (d.mon !== mon) return false;
     if (selectedYoyMatTypes.indexOf('all') === -1 && selectedYoyMatTypes.indexOf(d.mat_type) === -1) return false;
     if (txn !== 'all' && d.txn_type !== txn) return false;
-    if (search && !d.item_desc.toLowerCase().includes(search)) return false;
+    if (search && !d.item_desc.toLowerCase().includes(search) && !String(d.item_code||"").toLowerCase().includes(search)) return false;
     return true;
   });
   
@@ -1108,12 +1108,12 @@ function renderYoY() {
   document.getElementById('yoyNegCount').textContent = neg;
   document.getElementById('yoyRange').textContent = 'Showing '+filtered.length+' items | Net Impact: '+fmt(net)+' BDT';
   
-  var h = '<table class="tbl"><thead><tr><th>#</th><th>SBU</th><th>Item Code</th><th>Item Description</th><th>Mat Type</th><th>UoM</th><th>Type</th><th class="num">Last Yr Rate</th><th class="num">This Yr Rate</th><th class="num">This Yr Qty</th><th class="num">This Yr Value</th><th class="num">Impact</th></tr></thead><tbody>';
+  var h = '<table class="tbl"><thead><tr><th>#</th><th>SBU</th><th>Item Code (Sys ID)</th><th>Item Description</th><th>Mat Type</th><th>UoM</th><th>Type</th><th class="num">Last Yr Rate</th><th class="num">This Yr Rate</th><th class="num">This Yr Qty</th><th class="num">This Yr Value</th><th class="num">Impact</th></tr></thead><tbody>';
   filtered.forEach(function(d,i){
     var impClass = d.impact > 0 ? ' style="color:#e74c3c;"' : ' style="color:#10b981;"';
     var pctHtml = '<span style="display:block;font-size:11px;font-weight:600;">(—)</span>';
     if (d.rate_last !== 0) { var pct = (d.rate_this - d.rate_last) / Math.abs(d.rate_last) * 100; var pctCls = pct >= 0 ? 'color:#e74c3c;' : 'color:#10b981;'; pctHtml = '<span style="display:block;font-size:11px;font-weight:600;'+pctCls+'">('+(pct>=0?'+':'')+pct.toFixed(2)+'%)</span>'; }
-    h += '<tr><td>'+(i+1)+'</td><td style="color:'+(sbuColors[d.sbu]||'var(--accent)')+'">'+d.sbu+'</td><td>'+d.item_code+'</td><td title="'+d.item_desc+'">'+d.item_desc.substring(0,50)+(d.item_desc.length>50?'...':'')+'</td><td>'+d.mat_type+'</td><td>'+d.uom+'</td><td style="font-size:10px;color:var(--muted);">'+d.txn_type+'</td><td class="num">'+d.rate_last.toFixed(2)+'</td><td class="num">'+d.rate_this.toFixed(2)+pctHtml+'</td><td class="num">'+Math.abs(d.qty_this).toFixed(2)+'</td><td class="num">'+fmt(d.value_this)+'</td><td class="num"'+impClass+'><strong>'+(d.impact>=0?'+':'')+fmt(d.impact)+'</strong></td></tr>';
+    h += '<tr><td>'+(i+1)+'</td><td style="color:'+(sbuColors[d.sbu]||'var(--accent)')+'">'+d.sbu+'</td><td>'+(d.item_code_display||d.item_code)+'</td><td title="'+d.item_desc+'">'+d.item_desc.substring(0,50)+(d.item_desc.length>50?'...':'')+'</td><td>'+d.mat_type+'</td><td>'+d.uom+'</td><td style="font-size:10px;color:var(--muted);">'+d.txn_type+'</td><td class="num">'+d.rate_last.toFixed(2)+'</td><td class="num">'+d.rate_this.toFixed(2)+pctHtml+'</td><td class="num">'+Math.abs(d.qty_this).toFixed(2)+'</td><td class="num">'+fmt(d.value_this)+'</td><td class="num"'+impClass+'><strong>'+(d.impact>=0?'+':'')+fmt(d.impact)+'</strong></td></tr>';
   });
   h += '</tbody></table>';
   document.getElementById('yoyTable').innerHTML = h;
@@ -1130,8 +1130,8 @@ function exportYoYCSV() {
     if (txn !== 'all' && d.txn_type !== txn) return false;
     return true;
   });
-  var rows = [['SBU','Item Code','Item Description','Mat Type','UoM','Txn Type','Last Yr Rate','This Yr Rate','This Yr Qty','This Yr Value','Impact']];
-  filtered.forEach(function(d){rows.push([d.sbu,d.item_code,'"'+d.item_desc.replace(/"/g,'""')+'"',d.mat_type,d.uom,d.txn_type,d.rate_last,d.rate_this,d.qty_this,d.value_this,d.impact]);});
+  var rows = [['SBU','Item Code (Sys ID)','Item Description','Mat Type','UoM','Txn Type','Last Yr Rate','This Yr Rate','This Yr Qty','This Yr Value','Impact']];
+  filtered.forEach(function(d){rows.push([d.sbu,(d.item_code_display||d.item_code),'"'+d.item_desc.replace(/"/g,'""')+'"',d.mat_type,d.uom,d.txn_type,d.rate_last,d.rate_this,d.qty_this,d.value_this,d.impact]);});
   var csv = rows.map(function(r){return r.join(',');}).join('\n');
   var blob = new Blob([csv],{type:'text/csv'});
   var url = URL.createObjectURL(blob);
