@@ -71,8 +71,10 @@ def fetch_items(sbu_filter="all", type_filter="all", txn_filter="all", search=""
     
     sql = f"""
         SELECT b.strBusinessUnitCode AS sbu, b.strBusinessUnitName AS sbuName,
+          r.intItemId AS sys_id,
+          COALESCE(i.strItemCode, CAST(r.intItemId AS NVARCHAR(50))) AS item_code,
           r.strItemName AS item,
-          COALESCE(m.strItemMasterTypeName,
+          COALESCE(i.strItemTypeName, m.strItemMasterTypeName,
             CASE WHEN r.strItemName LIKE '%Bag%' OR r.strItemName LIKE '%Pack%' OR r.strItemName LIKE '%Carton%' OR r.strItemName LIKE '%Label%' OR r.strItemName LIKE '%Liner%' OR r.strItemName LIKE '%Bottle%' OR r.strItemName LIKE '%Sticker%' OR r.strItemName LIKE '%Wrapper%' THEN 'Packaging Materials' ELSE 'Other' END
           ) AS mat_type,
           h.strTransactionTypeName AS txn_type,
@@ -82,16 +84,20 @@ def fetch_items(sbu_filter="all", type_filter="all", txn_filter="all", search=""
         FROM wms.tblInventoryTransactionRowArc r
         JOIN wms.tblInventoryTransactionHeaderArc h ON r.intInventoryTransactionId = h.intInventoryTransactionId
         JOIN dco.tblbusinessunitArc b ON h.intBusinessUnitId = b.intBusinessUnitId
-        LEFT JOIN itm.tblItemMasterArc m ON r.intItemId = m.intItemMasterId
+        LEFT JOIN itm.tblItemArc i ON r.intItemId = i.intItemId
+        LEFT JOIN itm.tblItemMasterArc m ON i.intItemMasterId = m.intItemMasterId
         WHERE {' AND '.join(where)}
-        GROUP BY b.strBusinessUnitCode, b.strBusinessUnitName, r.strItemName,
-          COALESCE(m.strItemMasterTypeName, CASE WHEN r.strItemName LIKE '%Bag%' OR r.strItemName LIKE '%Pack%' OR r.strItemName LIKE '%Carton%' OR r.strItemName LIKE '%Label%' OR r.strItemName LIKE '%Liner%' OR r.strItemName LIKE '%Bottle%' OR r.strItemName LIKE '%Sticker%' OR r.strItemName LIKE '%Wrapper%' THEN 'Packaging Materials' ELSE 'Other' END),
+        GROUP BY b.strBusinessUnitCode, b.strBusinessUnitName, r.intItemId,
+          COALESCE(i.strItemCode, CAST(r.intItemId AS NVARCHAR(50))), r.strItemName,
+          COALESCE(i.strItemTypeName, m.strItemMasterTypeName, CASE WHEN r.strItemName LIKE '%Bag%' OR r.strItemName LIKE '%Pack%' OR r.strItemName LIKE '%Carton%' OR r.strItemName LIKE '%Label%' OR r.strItemName LIKE '%Liner%' OR r.strItemName LIKE '%Bottle%' OR r.strItemName LIKE '%Sticker%' OR r.strItemName LIKE '%Wrapper%' THEN 'Packaging Materials' ELSE 'Other' END),
           h.strTransactionTypeName
     """
     df = query(sql)
+    if 'item_code' in df.columns and 'sys_id' in df.columns:
+        df['item_code_display'] = df['item_code'].astype(str) + ' (' + df['sys_id'].astype(str) + ')'
     if type_filter != "all": df = df[df['mat_type'] == type_filter]
     if txn_filter != "all": df = df[df['txn_type'] == txn_filter]
-    if search: df = df[df['item'].str.lower().str.contains(search.lower(), na=False)]
+    if search: df = df[df['item'].str.lower().str.contains(search.lower(), na=False) | df['item_code'].astype(str).str.lower().str.contains(search.lower(), na=False)]
     return df
 
 @st.cache_data(ttl=3600)
@@ -119,20 +125,21 @@ def fetch_yoy_rates(sbu_code, month_num, mat_type="all"):
 
     mat_condition = ""
     if mat_type == "Raw Materials":
-        mat_condition = "AND COALESCE(m.strItemMasterTypeName, 'Other') = 'Raw Materials'"
+        mat_condition = "AND COALESCE(i.strItemTypeName, m.strItemMasterTypeName, 'Other') = 'Raw Materials'"
     elif mat_type == "Packaging Materials":
-        mat_condition = "AND (COALESCE(m.strItemMasterTypeName, 'Other') = 'Packaging Materials' OR r.strItemName LIKE '%Bag%' OR r.strItemName LIKE '%Pack%' OR r.strItemName LIKE '%Carton%' OR r.strItemName LIKE '%Label%' OR r.strItemName LIKE '%Liner%' OR r.strItemName LIKE '%Bottle%' OR r.strItemName LIKE '%Sticker%' OR r.strItemName LIKE '%Wrapper%')"
+        mat_condition = "AND (COALESCE(i.strItemTypeName, m.strItemMasterTypeName, 'Other') = 'Packaging Materials' OR r.strItemName LIKE '%Bag%' OR r.strItemName LIKE '%Pack%' OR r.strItemName LIKE '%Carton%' OR r.strItemName LIKE '%Label%' OR r.strItemName LIKE '%Liner%' OR r.strItemName LIKE '%Bottle%' OR r.strItemName LIKE '%Sticker%' OR r.strItemName LIKE '%Wrapper%')"
 
     sql = f"""
         SELECT 
             b.strBusinessUnitCode AS sbu,
             b.strBusinessUnitName AS sbu_name,
-            r.intItemId AS item_code,
+            r.intItemId AS sys_id,
+            COALESCE(i.strItemCode, CAST(r.intItemId AS NVARCHAR(50))) AS item_code,
             r.strItemName AS item_desc,
-            COALESCE(m.strItemMasterTypeName, 
+            COALESCE(i.strItemTypeName, m.strItemMasterTypeName, 
               CASE WHEN r.strItemName LIKE '%Bag%' OR r.strItemName LIKE '%Pack%' THEN 'Packaging Materials' ELSE 'Other' END
             ) AS mat_type,
-            COALESCE(u.strUoMName, '') AS uom,
+            r.strUoMName AS uom,
             h.strTransactionTypeName AS txn_type,
             YEAR(h.dteTransactionDate) AS yr,
             MONTH(h.dteTransactionDate) AS mon,
@@ -141,15 +148,16 @@ def fetch_yoy_rates(sbu_code, month_num, mat_type="all"):
         FROM wms.tblInventoryTransactionRowArc r
         JOIN wms.tblInventoryTransactionHeaderArc h ON r.intInventoryTransactionId = h.intInventoryTransactionId
         JOIN dco.tblbusinessunitArc b ON h.intBusinessUnitId = b.intBusinessUnitId
-        LEFT JOIN itm.tblItemMasterArc m ON r.intItemId = m.intItemMasterId
-        LEFT JOIN itm.tblItemMasterArc u ON r.intUoMId = u.intUOMId
+        LEFT JOIN itm.tblItemArc i ON r.intItemId = i.intItemId
+        LEFT JOIN itm.tblItemMasterArc m ON i.intItemMasterId = m.intItemMasterId
         WHERE {' AND '.join(where)}
           AND MONTH(h.dteTransactionDate) = {month_num}
           AND YEAR(h.dteTransactionDate) IN ({yr_last}, {yr_this})
           {mat_condition}
-        GROUP BY b.strBusinessUnitCode, b.strBusinessUnitName, r.intItemId, r.strItemName,
-          COALESCE(m.strItemMasterTypeName, CASE WHEN r.strItemName LIKE '%Bag%' OR r.strItemName LIKE '%Pack%' THEN 'Packaging Materials' ELSE 'Other' END),
-          COALESCE(u.strUoMName, ''), h.strTransactionTypeName,
+        GROUP BY b.strBusinessUnitCode, b.strBusinessUnitName, r.intItemId,
+          COALESCE(i.strItemCode, CAST(r.intItemId AS NVARCHAR(50))), r.strItemName,
+          COALESCE(i.strItemTypeName, m.strItemMasterTypeName, CASE WHEN r.strItemName LIKE '%Bag%' OR r.strItemName LIKE '%Pack%' THEN 'Packaging Materials' ELSE 'Other' END),
+          r.strUoMName, h.strTransactionTypeName,
           YEAR(h.dteTransactionDate), MONTH(h.dteTransactionDate)
     """
     return query(sql)
@@ -304,14 +312,14 @@ else: items_df = items_df.sort_values('item')
 st.caption(f"Showing {len(items_df)} item rows")
 
 # Display with expander for monthly
-display_cols = ['sbu','mat_type','txn_type','item','value','qty','txn']
+display_cols = ['sbu','item_code_display','mat_type','txn_type','item','value','qty','txn']
 show_df = items_df[display_cols].copy()
 show_df['Monthly Rate (BDT/mo)'] = ""  # Will be computed on expand
-show_df.columns = ['SBU','Material Type','Txn Type','Item','Value','Quantity','Txns','Monthly Rate']
+show_df.columns = ['SBU','Item Code (Sys ID)','Material Type','Txn Type','Item','Value','Quantity','Txns','Monthly Rate']
 
 # CSV export
 csv_buffer = StringIO()
-items_df[['sbu','sbuName','mat_type','txn_type','item','value','qty','txn']].to_csv(csv_buffer, index=False)
+items_df[['sbu','sbuName','sys_id','item_code','mat_type','txn_type','item','value','qty','txn']].to_csv(csv_buffer, index=False)
 st.download_button("📥 Export CSV", csv_buffer.getvalue(), f"cogs_items_{datetime.now().strftime('%Y-%m-%d')}.csv", "text/csv")
 
 # Render table with expanders
@@ -320,7 +328,7 @@ for i, (idx, row) in enumerate(items_df.iterrows()):
         r1, r2 = st.columns([10, 1.5])
         with r1:
             mat_tag = "🔵" if row['mat_type'] == "Raw Materials" else ("🟣" if row['mat_type'] == "Packaging Materials" else "⚪")
-            st.write(f"**{i+1}.** {mat_tag} `{row['sbu']}` — *{row['txn_type']}* — **{row['item'][:80]}**")
+            st.write(f"**{i+1}.** {mat_tag} `{row['sbu']}` — `{row.get('item_code_display', row.get('item_code',''))}` — *{row['txn_type']}* — **{row['item'][:80]}**")
             st.caption(f"Value: **{fmt(row['value'])}** BDT | Qty: {abs(row['qty']):.2f} | Txns: {row['txn']}")
         with r2:
             st.write("")
@@ -378,11 +386,11 @@ mat_filter = yoy_mat if yoy_mat != "All" else "all"
 yoy_data = fetch_yoy_rates(yoy_sbu, yoy_month_num, mat_filter)
 
 if len(yoy_data) > 0:
-    # Separate last year and this year
-    yoy_last = yoy_data[yoy_data['yr'] == 2025].groupby(['sbu','sbu_name','item_code','item_desc','mat_type','uom','txn_type']).agg(value_last=('value','sum'), qty_last=('qty','sum')).reset_index()
-    yoy_this = yoy_data[yoy_data['yr'] == 2026].groupby(['sbu','sbu_name','item_code','item_desc','mat_type','uom','txn_type']).agg(value_this=('value','sum'), qty_this=('qty','sum')).reset_index()
+    # Separate last year and this year - include sys_id to keep business code + system id distinct
+    yoy_last = yoy_data[yoy_data['yr'] == 2025].groupby(['sbu','sbu_name','sys_id','item_code','item_desc','mat_type','uom','txn_type']).agg(value_last=('value','sum'), qty_last=('qty','sum')).reset_index()
+    yoy_this = yoy_data[yoy_data['yr'] == 2026].groupby(['sbu','sbu_name','sys_id','item_code','item_desc','mat_type','uom','txn_type']).agg(value_this=('value','sum'), qty_this=('qty','sum')).reset_index()
     
-    merged = pd.merge(yoy_last, yoy_this, on=['sbu','sbu_name','item_code','item_desc','mat_type','uom','txn_type'], how='outer').fillna(0)
+    merged = pd.merge(yoy_last, yoy_this, on=['sbu','sbu_name','sys_id','item_code','item_desc','mat_type','uom','txn_type'], how='outer').fillna(0)
     
     # Filter by consumption type
     if yoy_txn_sel != "all":
@@ -410,9 +418,10 @@ if len(yoy_data) > 0:
     ik3.metric("Avg Rate Change", f"{merged['rate_this'].mean() - merged['rate_last'].mean():.2f} BDT/unit")
     ik4.metric("Top Saver", f"{merged.iloc[-1]['item_desc'][:30]}..." if len(merged)>0 else "N/A")
     
-    # Format display table
-    display = merged[['sbu','item_code','item_desc','mat_type','uom','rate_last','rate_this','qty_this','value_this','impact']].copy()
-    display.columns = ['SBU','Item Code','Item Description','Mat Type','UoM','Last Yr Rate','This Yr Rate','This Yr Qty','This Yr Value','Impact']
+    # Format display table - Item Code (Sys ID) dual display
+    merged['item_code_display'] = merged['item_code'].astype(str) + ' (' + merged['sys_id'].astype(str) + ')'
+    display = merged[['sbu','item_code_display','item_desc','mat_type','uom','rate_last','rate_this','qty_this','value_this','impact']].copy()
+    display.columns = ['SBU','Item Code (Sys ID)','Item Description','Mat Type','UoM','Last Yr Rate','This Yr Rate','This Yr Qty','This Yr Value','Impact']
     display['This Yr Qty'] = display['This Yr Qty'].apply(lambda x: f"{abs(x):.2f}")
     display['This Yr Value'] = display['This Yr Value'].apply(lambda x: fmt(x))
     display['Impact'] = display['Impact'].apply(lambda x: fmt(x))
@@ -423,7 +432,7 @@ if len(yoy_data) > 0:
     
     # CSV export
     yoy_csv = StringIO()
-    merged[['sbu','item_code','item_desc','mat_type','uom','txn_type','rate_last','rate_this','qty_this','value_this','impact']].to_csv(yoy_csv, index=False)
+    merged[['sbu','sys_id','item_code','item_desc','mat_type','uom','txn_type','rate_last','rate_this','qty_this','value_this','impact']].to_csv(yoy_csv, index=False)
     st.download_button("📥 Export YoY Data", yoy_csv.getvalue(), f"yoy_rates_{yoy_month}_{datetime.now().strftime('%Y%m%d')}.csv", "text/csv")
 else:
     st.caption("No data available for the selected month and filters.")

@@ -16,14 +16,15 @@ async function run() {
   console.log('Connecting...');
   const pool = await sql.connect(CONFIG);
 
-  console.log('Fetching YoY data for Jul-Aug only (months with both 2025+2026 data)...');
+  console.log('Fetching YoY data for Jul-Aug only (months with both 2025+2026 data)... FIXED: Item Type via tblItemArc');
   const res = await pool.request().query(`
     SELECT 
       b.strBusinessUnitCode AS sbu,
       b.strBusinessUnitName AS sbu_name,
-      r.intItemId AS item_code,
+      r.intItemId AS sys_id,
+      COALESCE(i.strItemCode, CAST(r.intItemId AS NVARCHAR(50))) AS item_code,
       r.strItemName AS item_desc,
-      COALESCE(m.strItemMasterTypeName,
+      COALESCE(i.strItemTypeName, m.strItemMasterTypeName,
         CASE WHEN r.strItemName LIKE '%Bag%' OR r.strItemName LIKE '%Pack%' OR r.strItemName LIKE '%Carton%' OR r.strItemName LIKE '%Label%' OR r.strItemName LIKE '%Liner%' OR r.strItemName LIKE '%Bottle%' OR r.strItemName LIKE '%Sticker%' OR r.strItemName LIKE '%Wrapper%' THEN 'Packaging Materials' ELSE 'Other' END
       ) AS mat_type,
       r.strUoMName AS uom,
@@ -35,13 +36,15 @@ async function run() {
     FROM wms.tblInventoryTransactionRowArc r
     JOIN wms.tblInventoryTransactionHeaderArc h ON r.intInventoryTransactionId = h.intInventoryTransactionId
     JOIN dco.tblbusinessunitArc b ON h.intBusinessUnitId = b.intBusinessUnitId
-    LEFT JOIN itm.tblItemMasterArc m ON r.intItemId = m.intItemMasterId
+    LEFT JOIN itm.tblItemArc i ON r.intItemId = i.intItemId
+    LEFT JOIN itm.tblItemMasterArc m ON i.intItemMasterId = m.intItemMasterId
     WHERE h.intBusinessUnitId IN (${SBU_IDS.join(',')})
       AND MONTH(h.dteTransactionDate) IN (7, 8)
       AND YEAR(h.dteTransactionDate) IN (2025, 2026)
       AND h.TransactionGroupId = 2
-    GROUP BY b.strBusinessUnitCode, b.strBusinessUnitName, r.intItemId, r.strItemName,
-      COALESCE(m.strItemMasterTypeName, CASE WHEN r.strItemName LIKE '%Bag%' OR r.strItemName LIKE '%Pack%' OR r.strItemName LIKE '%Carton%' OR r.strItemName LIKE '%Label%' OR r.strItemName LIKE '%Liner%' OR r.strItemName LIKE '%Bottle%' OR r.strItemName LIKE '%Sticker%' OR r.strItemName LIKE '%Wrapper%' THEN 'Packaging Materials' ELSE 'Other' END),
+    GROUP BY b.strBusinessUnitCode, b.strBusinessUnitName, r.intItemId,
+      COALESCE(i.strItemCode, CAST(r.intItemId AS NVARCHAR(50))), r.strItemName,
+      COALESCE(i.strItemTypeName, m.strItemMasterTypeName, CASE WHEN r.strItemName LIKE '%Bag%' OR r.strItemName LIKE '%Pack%' OR r.strItemName LIKE '%Carton%' OR r.strItemName LIKE '%Label%' OR r.strItemName LIKE '%Liner%' OR r.strItemName LIKE '%Bottle%' OR r.strItemName LIKE '%Sticker%' OR r.strItemName LIKE '%Wrapper%' THEN 'Packaging Materials' ELSE 'Other' END),
       r.strUoMName, h.strTransactionTypeName,
       YEAR(h.dteTransactionDate), MONTH(h.dteTransactionDate)
   `);
@@ -49,10 +52,10 @@ async function run() {
 
   const byKey = {};
   res.recordset.forEach(r => {
-    const key = `${r.sbu}|${r.item_code}|${r.txn_type}|${r.mon}`;
+    const key = `${r.sbu}|${r.sys_id}|${r.txn_type}|${r.mon}`;
     if (!byKey[key]) byKey[key] = { last: {value:0,qty:0}, this: {value:0,qty:0}, meta: null };
     if (!byKey[key].meta) {
-      byKey[key].meta = { sbu: r.sbu, sbu_name: r.sbu_name, item_code: r.item_code, item_desc: r.item_desc, mat_type: r.mat_type, uom: r.uom || '', txn_type: r.txn_type, mon: r.mon };
+      byKey[key].meta = { sbu: r.sbu, sbu_name: r.sbu_name, sys_id: r.sys_id, item_code: r.item_code, item_desc: r.item_desc, mat_type: r.mat_type, uom: r.uom || '', txn_type: r.txn_type, mon: r.mon };
     }
     if (r.yr === 2025) { byKey[key].last.value += r.value; byKey[key].last.qty += r.qty; }
     if (r.yr === 2026) { byKey[key].this.value += r.value; byKey[key].this.qty += r.qty; }
@@ -65,7 +68,8 @@ async function run() {
     const rt = v.this.qty !== 0 ? Math.abs(v.this.value / v.this.qty) : 0;
     if (v.last.qty !== 0 && v.this.qty !== 0) {
       yoyData.push({
-        sbu: m.sbu, sbu_name: m.sbu_name, item_code: m.item_code, item_desc: m.item_desc,
+        sbu: m.sbu, sbu_name: m.sbu_name, sys_id: m.sys_id, item_code: m.item_code,
+        item_code_display: `${m.item_code} (${m.sys_id})`, item_desc: m.item_desc,
         mat_type: m.mat_type, uom: m.uom, txn_type: m.txn_type, mon: m.mon,
         rate_last: Math.round(rl*100)/100, rate_this: Math.round(rt*100)/100,
         qty_this: Math.round(v.this.qty*100)/100, value_this: Math.round(v.this.value*100)/100,

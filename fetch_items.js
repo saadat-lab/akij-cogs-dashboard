@@ -17,14 +17,16 @@ async function run() {
   const pool = await sql.connect(CONFIG);
 
   // 1. ITEMS DATA with transaction type
-  console.log('Fetching items data...');
+  console.log('Fetching items data... FIXED via tblItemArc');
   const itemsRes = await pool.request().query(`
     WITH item_data AS (
       SELECT b.strBusinessUnitCode, b.strBusinessUnitName,
-        r.intItemId, r.strItemName,
+        r.intItemId AS sys_id,
+        COALESCE(i.strItemCode, CAST(r.intItemId AS NVARCHAR(50))) AS item_code,
+        r.strItemName,
         r.monTransactionValue, r.numTransactionQuantity,
         h.strTransactionTypeName,
-        COALESCE(m.strItemMasterTypeName,
+        COALESCE(i.strItemTypeName, m.strItemMasterTypeName,
           CASE
             WHEN r.strItemName LIKE '%PPW Bag%' OR r.strItemName LIKE '%Bag%' OR r.strItemName LIKE '%Carton%' OR r.strItemName LIKE '%Label%' OR r.strItemName LIKE '%Sack%' OR r.strItemName LIKE '%Pouch%' OR r.strItemName LIKE '%Liner%' OR r.strItemName LIKE '%Bottle%' OR r.strItemName LIKE '%Sticker%' OR r.strItemName LIKE '%Wrapper%' OR r.strItemName LIKE '%Tin%' OR r.strItemName LIKE '%Can%' OR r.strItemName LIKE '%Cap%' THEN 'Packaging Materials'
             ELSE 'Other'
@@ -33,23 +35,26 @@ async function run() {
       FROM wms.tblInventoryTransactionRowArc r
       JOIN wms.tblInventoryTransactionHeaderArc h ON r.intInventoryTransactionId = h.intInventoryTransactionId
       JOIN dco.tblbusinessunitArc b ON h.intBusinessUnitId = b.intBusinessUnitId
-      LEFT JOIN itm.tblItemMasterArc m ON r.intItemId = m.intItemMasterId
+      LEFT JOIN itm.tblItemArc i ON r.intItemId = i.intItemId
+      LEFT JOIN itm.tblItemMasterArc m ON i.intItemMasterId = m.intItemMasterId
       WHERE h.intBusinessUnitId IN (${SBU_IDS.join(',')})
         AND h.dteTransactionDate >= '2024-07-01'
         AND h.TransactionGroupId = 2
     )
-    SELECT strBusinessUnitCode, strBusinessUnitName, strItemName, material_type, strTransactionTypeName AS txn_type,
+    SELECT strBusinessUnitCode, strBusinessUnitName, sys_id, item_code, strItemName, material_type, strTransactionTypeName AS txn_type,
       SUM(monTransactionValue) AS total_value,
       SUM(numTransactionQuantity) AS total_qty,
       COUNT(*) AS txn_count
     FROM item_data
-    GROUP BY strBusinessUnitCode, strBusinessUnitName, strItemName, material_type, strTransactionTypeName
+    GROUP BY strBusinessUnitCode, strBusinessUnitName, sys_id, item_code, strItemName, material_type, strTransactionTypeName
     ORDER BY strBusinessUnitCode, total_value ASC
   `);
   console.log(`Fetched ${itemsRes.recordset.length} item rows`);
 
   const items = itemsRes.recordset.map(r => ({
     sbu: r.strBusinessUnitCode, sbuName: r.strBusinessUnitName,
+    sys_id: r.sys_id, item_code: r.item_code,
+    item_code_display: `${r.item_code} (${r.sys_id})`,
     item: r.strItemName, type: r.material_type, txnType: r.txn_type,
     value: r.total_value, qty: r.total_qty, txn: r.txn_count
   }));

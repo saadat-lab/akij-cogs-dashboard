@@ -275,6 +275,13 @@ canvas { max-height: 340px; }
         <option value="qty">Quantity</option>
         <option value="alpha">Alphabetical</option>
       </select>
+      <label style="font-size:11px;color:var(--muted);font-weight:600">From</label>
+      <input type="month" id="itemFrom" value="2024-07" min="2024-07" max="2026-09" style="border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:11px;background:var(--card)">
+      <label style="font-size:11px;color:var(--muted);font-weight:600">To</label>
+      <input type="month" id="itemTo" value="2026-08" min="2024-07" max="2026-09" style="border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:11px;background:var(--card)">
+      <button onclick="applyItemDateFilter()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11px;cursor:pointer;font-weight:600;">Apply</button>
+      <button onclick="resetItemDateFilter()" title="Reset to full history" style="background:var(--card);border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:6px 12px;font-size:11px;cursor:pointer;">Reset</button>
+      <span id="itemDateNote" style="font-size:10px;color:var(--muted);"></span>
       <button onclick="exportCSV()" style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11px;cursor:pointer;font-weight:600;">Export CSV</button>
     </div>
   </div>
@@ -853,13 +860,70 @@ function toggleMatItem(val, el) {
   renderItems();
 }
 
+
+// ===== Global date filter - main table + overrides all Monthly drills =====
+var itemDateFrom = null, itemDateTo = null;
+var DEFAULT_DR_FROM = "2025-07", DEFAULT_DR_TO = "2026-08";
+function effectiveDrFrom(){ return itemDateFrom || DEFAULT_DR_FROM; }
+function effectiveDrTo(){ return itemDateTo || DEFAULT_DR_TO; }
+function applyItemDateFilter(){
+  var f = document.getElementById('itemFrom').value, to = document.getElementById('itemTo').value;
+  if(f && to && f > to){ alert('From cannot be after To'); return; }
+  itemDateFrom = f || null; itemDateTo = to || null; itemPage = 0; renderItems();
+  refreshOpenMonthlyToGlobal();
+}
+function resetItemDateFilter(){
+  itemDateFrom = null; itemDateTo = null;
+  document.getElementById('itemFrom').value = '2024-07';
+  document.getElementById('itemTo').value = '2026-08';
+  itemPage = 0; renderItems();
+  refreshOpenMonthlyToGlobal();
+}
+function refreshOpenMonthlyToGlobal(){
+  var openRow = document.querySelector('.monthly-row');
+  if(!openRow || !expandedKey) return;
+  var f = document.getElementById('drFrom'), to = document.getElementById('drTo');
+  if(f) f.value = effectiveDrFrom();
+  if(to) to.value = effectiveDrTo();
+  var idx = (openRow.id || 'mr').replace('mr','');
+  filterMonthly(parseInt(idx, 10), expandedKey);
+}
+function inItemRange(yr, mon){
+  if(!itemDateFrom && !itemDateTo) return true;
+  var ym = yr + '-' + String(mon).padStart(2,'0');
+  if(itemDateFrom && ym < itemDateFrom) return false;
+  if(itemDateTo && ym > itemDateTo) return false;
+  return true;
+}
+var _itemMeta = {};
+function getItemMeta(){
+  if(Object.keys(_itemMeta).length) return _itemMeta;
+  (ITEMS_DATA||[]).forEach(function(i){ _itemMeta[i.sbu+'|'+i.item+'|'+i.txnType] = i; });
+  return _itemMeta;
+}
+function getFilteredItemsBase(){
+  if(!itemDateFrom && !itemDateTo) return ITEMS_DATA;
+  var meta = getItemMeta(), out = [];
+  var keys = (typeof MONTHLY_DATA!=='undefined') ? Object.keys(MONTHLY_DATA) : [];
+  keys.forEach(function(key){
+    var parts = key.split('|'); var sbu = parts[0], txn = parts.slice(2).join('|'), item = parts[1];
+    var m = meta[key] || {};
+    var agg = {sbu: sbu, sbuName: m.sbuName||sbu, item: item, type: m.type||'Other',
+      txnType: txn, sys_id: m.sys_id||'', item_code: m.item_code||'',
+      item_code_display: m.item_code_display||m.item_code||'', value: 0, qty: 0, txn: 0};
+    (MONTHLY_DATA[key]||[]).forEach(function(d){ if(inItemRange(d.yr, d.mon)){ agg.value+=d.value; agg.qty+=d.qty; agg.txn+=d.txn; } });
+    if(agg.txn>0 || agg.value!==0) out.push(agg);
+  });
+  return out;
+}
+
 function renderItems() {
   var sbu = document.getElementById('itemSbuFilter').value;
   var txn = document.getElementById('itemTxnFilter').value;
   var search = document.getElementById('itemSearch').value.toLowerCase();
   var sort = document.getElementById('itemSort').value;
 
-  filteredItems = ITEMS_DATA.filter(function(i){
+  filteredItems = getFilteredItemsBase().filter(function(i){
     if (sbu !== 'all' && i.sbu !== sbu) return false;
     if (selectedMatTypes.indexOf('all') === -1 && selectedMatTypes.indexOf(i.type) === -1) return false;
     if (txn !== 'all' && i.txnType !== txn) return false;
@@ -878,17 +942,18 @@ function renderItems() {
   var start=itemPage*pageSize;
   var page=filteredItems.slice(start,start+pageSize);
   
-  document.getElementById('itemRange').textContent='Showing '+(start+1)+'-'+Math.min(start+pageSize,total)+' of '+total.toLocaleString()+' item rows';
+  document.getElementById('itemRange').textContent='Showing '+(total?((start+1)+'-'+Math.min(start+pageSize,total)+' of '+total.toLocaleString()):'0')+' item rows';
+  var _n=document.getElementById('itemDateNote'); if(_n){ _n.textContent=(itemDateFrom||itemDateTo)?('Filtered: '+(itemDateFrom||'2024-07')+' to '+(itemDateTo||'latest')):'Full history'; }
   
   var h='<table class="tbl"><thead><tr><th>#</th><th>SBU</th><th>Item Code (Sys ID)</th><th>Type</th><th>Txn Type</th><th>Item Name</th><th class="num">Value</th><th class="num">Qty</th><th class="num">Rate/Mo</th><th class="num">Txns</th><th></th></tr></thead><tbody>';
   page.forEach((item,i)=>{
     var key = item.sbu+'|'+item.item+'|'+item.txnType;
     var hasMonthly = typeof MONTHLY_DATA !== 'undefined' && MONTHLY_DATA[key];
     
-    // Monthly consumption rate from Jul 2025 onwards
+    // Monthly consumption rate - respects global From/To when set
     var monthlyRate = 0;
     if (hasMonthly) {
-      var mData = MONTHLY_DATA[key];
+      var mData = (MONTHLY_DATA[key]||[]).filter(function(d){ return inItemRange(d.yr, d.mon); });
       var totalVal = mData.reduce(function(s,d){ return s + Math.abs(d.value); }, 0);
       var uniqueMonths = new Set(mData.map(function(d){ return d.yr+'-'+d.mon; })).size;
       monthlyRate = uniqueMonths > 0 ? totalVal / uniqueMonths : 0;
@@ -936,8 +1001,8 @@ function toggleMonthly(idx, key) {
   var monthlyData = (typeof MONTHLY_DATA !== 'undefined' && MONTHLY_DATA[key]) ? MONTHLY_DATA[key] : [];
   if(monthlyData.length===0) return;
   
-  // Build month columns — respect default From/To (2025-07 → 2026-08) on first open, not all history back to 2024-07
-  var _from="2025-07", _to="2026-08";
+  // Global range overrides drill on open; per-item inputs can still override this one row.
+  var _from = effectiveDrFrom(), _to = effectiveDrTo();
   var filteredInit = monthlyData.filter(function(d){ var ym=d.yr+'-'+String(d.mon).padStart(2,'0'); return ym>=_from && ym<=_to; });
   // if item has no data in default range (e.g. started later), show its available range instead
   var monthsSrc = filteredInit.length ? filteredInit : monthlyData;
@@ -968,8 +1033,8 @@ function toggleMonthly(idx, key) {
   
   var rowHtml = '<tr class="monthly-row" id="mr'+idx+'"><td colspan="14" style="padding:8px 10px;">'+
     '<div id="dateRangeBar" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;font-size:11px;">'+
-      '<span style="color:var(--muted);">From:</span><input type="month" id="drFrom" value="2025-07" onchange="filterMonthly('+idx+',\''+key.replace(/'/g,"\\'")+'\')" style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:11px;">'+
-      '<span style="color:var(--muted);">To:</span><input type="month" id="drTo" value="2026-08" onchange="filterMonthly('+idx+',\''+key.replace(/'/g,"\\'")+'\')" style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:11px;">'+
+      '<span style="color:var(--muted);">From:</span><input type="month" id="drFrom" value="' + effectiveDrFrom() + '" onchange="filterMonthly('+idx+',\''+key.replace(/'/g,"\\'")+'\')" style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:11px;">'+
+      '<span style="color:var(--muted);">To:</span><input type="month" id="drTo" value="' + effectiveDrTo() + '" onchange="filterMonthly('+idx+',\''+key.replace(/'/g,"\\'")+'\')" style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:11px;">'+
       '<span style="color:var(--muted);">Consumption Type:</span><span style="color:var(--accent);font-weight:600;">'+key.split('|')[2]+'</span>'+
     '</div>'+
     '<div class="monthly-scroll"><table class="tbl"><thead>'+headerHtml+'</thead><tbody>'+valueRow+qtyRow+rateRow+txnRow+'</tbody></table></div>'+
@@ -1022,7 +1087,7 @@ function filterMonthly(idx, key) {
 
 function exportCSV() {
   var rows = [['SBU','SBU Name','Material Type','Transaction Type','Item','Value','Quantity','Monthly Rate','Transactions']];
-  filteredItems.forEach(function(i){ var mr=0;var key=i.sbu+'|'+i.item+'|'+i.txnType;if(typeof MONTHLY_DATA!=='undefined'&&MONTHLY_DATA[key]){var md=MONTHLY_DATA[key];var tv=md.reduce(function(s,d){return s+Math.abs(d.value);},0);var um=new Set(md.map(function(d){return d.yr+'-'+d.mon;})).size;mr=um>0?tv/um:0;} rows.push([i.sbu,i.sbuName,i.type,i.txnType,'"'+i.item.replace(/"/g,'""')+'"',i.value,i.qty,mr.toFixed(2),i.txn]); });
+  filteredItems.forEach(function(i){ var mr=0;var key=i.sbu+'|'+i.item+'|'+i.txnType;if(typeof MONTHLY_DATA!=='undefined'&&MONTHLY_DATA[key]){var md=(MONTHLY_DATA[key]||[]).filter(function(d){ return (typeof inItemRange==='function') ? inItemRange(d.yr,d.mon) : true; });var tv=md.reduce(function(s,d){return s+Math.abs(d.value);},0);var um=new Set(md.map(function(d){return d.yr+'-'+d.mon;})).size;mr=um>0?tv/um:0;} rows.push([i.sbu,i.sbuName,i.type,i.txnType,'"'+i.item.replace(/"/g,'""')+'"',i.value,i.qty,mr.toFixed(2),i.txn]); });
   var csv = rows.map(function(r){return r.join(',');}).join('\n');
   var blob=new Blob([csv],{type:'text/csv'});
   var url=URL.createObjectURL(blob);
