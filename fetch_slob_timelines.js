@@ -9,12 +9,13 @@ const SBUS = [
   {code:'HRML', id:188},
   {code:'FAL', id:189},
   {code:'AAFL', id:232},
+  {code:'ALEL', id:237},
 ];
 
 async function getSlobCodes(pool){
   // extract from existing slob_*.js if they exist, else from itm directly (all active items per SBU)
   const codes = new Set();
-  const files = {AEL:'slob_ael.js', HRML:'slob_hrml.js', FAL:'slob_fal.js', AAFL:'slob_aafl.js'};
+  const files = {AEL:'slob_ael.js', HRML:'slob_hrml.js', FAL:'slob_fal.js', AAFL:'slob_aafl.js', ALEL:'slob_alel.js'};
   for(const sbu of SBUS){
     const f = files[sbu.code];
     try{
