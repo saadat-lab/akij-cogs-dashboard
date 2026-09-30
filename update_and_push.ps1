@@ -29,13 +29,17 @@ try {
   node fetch_slob_ibos_fal.js 2>&1 | Tee-Object -FilePath $log -Append | Out-String | Write-Output
   log "Running fetch_slob_ibos_ael.js..."
   node fetch_slob_ibos_ael.js 2>&1 | Tee-Object -FilePath $log -Append | Out-String | Write-Output
+  log "Running fetch_slob_alel.js..."
+  node fetch_slob_alel.js 2>&1 | Tee-Object -FilePath $log -Append | Out-String | Write-Output
+  log "Running fetch_slob_ibos_alel.js..."
+  node fetch_slob_ibos_alel.js 2>&1 | Tee-Object -FilePath $log -Append | Out-String | Write-Output
   log "Running fetch_slob_timelines.js (PR/PO/GRN drill-down)..."
   node fetch_slob_timelines.js 2>&1 | Tee-Object -FilePath $log -Append | Out-String | Write-Output
   # keep index.html in sync
   Copy-Item -LiteralPath "akij_material_intelligence.html" -Destination "index.html" -Force
   log "Copy akij_material_intelligence.html -> index.html"
   # git add only dashboard assets (not inspect/debug scripts)
-  git add akij_material_intelligence.html index.html slob_aafl.js slob_hrml.js slob_fal.js slob_ael.js slob_ibos_aafl.js slob_ibos_hrml.js slob_ibos_fal.js slob_ibos_ael.js slob_timelines.js yoy_data.js items_data.js monthly_items.js daily_items.js slob_data.js 2>&1 | Out-String | Write-Output
+  git add akij_material_intelligence.html index.html slob_aafl.js slob_hrml.js slob_fal.js slob_ael.js slob_alel.js slob_ibos_aafl.js slob_ibos_hrml.js slob_ibos_fal.js slob_ibos_ael.js slob_ibos_alel.js slob_timelines.js yoy_data.js items_data.js monthly_items.js daily_items.js slob_data.js 2>&1 | Out-String | Write-Output
   $status = git status --porcelain 2>&1 | Out-String
   if ($status.Trim() -eq "") { log "No changes to commit."; exit 0 }
   $msg = "Daily auto-refresh $(Get-Date -Format 'yyyy-MM-dd HH:mm')"
